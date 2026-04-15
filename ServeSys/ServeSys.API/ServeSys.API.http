@@ -1,0 +1,17 @@
+@ServeSys.API_HostAddress = http://localhost:5042
+
+POST {{ServeSys.API_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "Username": "admin@servesys.com",
+  "Password": "admin@123"
+}
+
+###
+POST {{ServeSys.API_HostAddress}}/api/auth/refresh-token
+Content-Type: application/json
+
+{
+  "RefreshToken": "E2PPWyL672bRCYQkD+1eTlsttkWgfc/FUtAR+O7qNoM="
+}
