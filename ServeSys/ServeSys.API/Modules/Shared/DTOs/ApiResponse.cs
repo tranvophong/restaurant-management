@@ -19,3 +19,12 @@ public class ApiResponse<T>
         return new ApiResponse<T> { Success = false, Message = message, Errors = errors };
     }
 }
+
+public class ApiResponse
+{
+    public static ApiResponse<T> Ok<T>(T data, string message = "Success")
+       => ApiResponse<T>.Ok(data, message);
+
+    public static ApiResponse<object> Fail(string message, object? errors = null)
+        => ApiResponse<object>.Fail(message, errors);
+}
