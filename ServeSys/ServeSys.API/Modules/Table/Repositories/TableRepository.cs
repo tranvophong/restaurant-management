@@ -2,6 +2,7 @@
 using ServeSys.API.Modules.Table.Data;
 using ServeSys.API.Modules.Table.Entities;
 using ServeSys.API.Modules.Table.Interfaces.Repositories;
+using System.Linq.Expressions;
 
 namespace ServeSys.API.Modules.Table.Repositories
 {
@@ -13,9 +14,14 @@ namespace ServeSys.API.Modules.Table.Repositories
             _context = context;
         }
 
-        public async Task<IEnumerable<DiningTable>> GetTablesByAreaAsync(int areaId)
+        public async Task<IEnumerable<DiningTable>> FindAsync(Expression<Func<DiningTable, bool>>? predicate,
+            CancellationToken cancellationToken)
         {
-            var tables = await _context.DiningTables.Where(t => t.AreaId == areaId).ToListAsync();
+            if(predicate == null)
+            {
+                predicate = t => true;
+            }
+            var tables = await _context.DiningTables.Where(predicate).ToListAsync(cancellationToken);
             return tables;
         }
     }

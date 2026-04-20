@@ -5,6 +5,7 @@ namespace ServeSys.API.Modules.Table.Interfaces
 {
     public interface ITableService
     {
-        Task<IEnumerable<TableDto>> GetTablesByAreaAsync(int areaId);
+        Task<IEnumerable<TableDto>> GetTablesByAreaAsync(int areaId, CancellationToken ctk = default);
+        Task<IEnumerable<TableDto>> GetTablesAsync(CancellationToken ctk = default);
     }
 }

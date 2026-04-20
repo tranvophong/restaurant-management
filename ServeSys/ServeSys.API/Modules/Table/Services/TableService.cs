@@ -13,9 +13,22 @@ namespace ServeSys.API.Modules.Table.Services
         {
             _tableRepository = tableRepository;
         }
-        public async Task<IEnumerable<TableDto>> GetTablesByAreaAsync(int areaId)
+
+        public async Task<IEnumerable<TableDto>> GetTablesAsync(CancellationToken ctk = default)
         {
-            var tables = await _tableRepository.GetTablesByAreaAsync(areaId);
+            var tables = await _tableRepository.FindAsync(cancellationToken: ctk);
+            return tables.Select(t => new TableDto
+            {
+                Id = t.Id,
+                Name = t.Name,
+                Seats = t.Capacity,
+                Status = t.Status
+            });
+        }
+
+        public async Task<IEnumerable<TableDto>> GetTablesByAreaAsync(int areaId, CancellationToken ctk = default)
+        {
+            var tables = await _tableRepository.FindAsync(t => t.AreaId == areaId, ctk);
             return tables.Select(t => new TableDto
             {
                 Id = t.Id,

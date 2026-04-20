@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:servesys/core/utils/index.dart';
+import 'package:servesys/features/home/bloc/area_cubit.dart';
+import 'package:servesys/features/home/bloc/area_state.dart';
+import 'package:servesys/features/home/bloc/table_cubit.dart';
+import 'package:servesys/features/home/bloc/table_state.dart';
+import 'package:servesys/features/home/domain/entities/table.dart' as entities;
 import 'package:servesys/features/home/domain/enums/table_status.dart';
-// ─── Data models ─────────────────────────────────────────────────────────────
+import 'package:shimmer/shimmer.dart';
 
 class TableData {
   final String id;
@@ -23,70 +29,69 @@ class TableData {
 
 // ─── Static data ─────────────────────────────────────────────────────────────
 const List<TableData> tables = [
-  TableData(id: 'B01', chairs: 4, status: TableStatus.occupied, total: '1.250k', time: null),
+  TableData(
+    id: 'B01',
+    chairs: 4,
+    status: TableStatus.occupied,
+    total: '1.250k',
+    time: null,
+  ),
   TableData(id: 'A04', chairs: 2, status: TableStatus.empty),
   TableData(id: 'V02', chairs: 8, status: TableStatus.reserved, time: '19:30'),
-  TableData(id: 'B05', chairs: 4, status: TableStatus.paying, note: 'Vừa thanh toán'),
-  TableData(id: 'B07', chairs: 4, status: TableStatus.occupied, time: '45p', total: '820k'),
+  TableData(
+    id: 'B05',
+    chairs: 4,
+    status: TableStatus.paying,
+    note: 'Vừa thanh toán',
+  ),
+  TableData(
+    id: 'B07',
+    chairs: 4,
+    status: TableStatus.occupied,
+    time: '45p',
+    total: '820k',
+  ),
   TableData(id: 'A09', chairs: 2, status: TableStatus.empty),
 ];
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
-class TableScreen extends StatefulWidget {
-  const TableScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
   @override
-  State<TableScreen> createState() => _TableScreenState();
+  State<HomeScreen> createState() => _TableScreenState();
 }
 
-class _TableScreenState extends State<TableScreen> {
-  int _selectedFloor = 0;
+class _TableScreenState extends State<HomeScreen> {
   int _selectedNav = 0;
 
-  final List<String> _floors = ['Tất cả', 'Tầng 1', 'Tầng 2', 'Ngoài trời'];
-
-  int get _emptyCount => tables.where((t) => t.status == TableStatus.empty).length;
-  int get _occupiedCount => tables.where((t) => t.status == TableStatus.occupied).length;
-
-  Color _statusColor(TableStatus s) {
-    switch (s) {
-      case TableStatus.empty:
-        return AppColors.success;
-      case TableStatus.occupied:
-        return AppColors.error;
-      case TableStatus.reserved:
-        return AppColors.info;
-      case TableStatus.paying:
-        return AppColors.warning;
-    }
-  }
-
-  String _statusLabel(TableStatus s) {
-    switch (s) {
-      case TableStatus.empty:
-        return 'BÀN TRỐNG';
-      case TableStatus.occupied:
-        return 'ĐANG CÓ KHÁCH';
-      case TableStatus.reserved:
-        return 'ĐÃ ĐẶT TRƯỚC';
-      case TableStatus.paying:
-        return 'ĐANG ĐÓN';
-    }
-  }
+  int get _emptyCount =>
+      tables.where((t) => t.status == TableStatus.empty).length;
+  int get _occupiedCount =>
+      tables.where((t) => t.status == TableStatus.occupied).length;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Column(
-          children: [
-            _buildTopBar(),
-            _buildGreeting(),
-            _buildSummaryBadges(),
-            _buildFloorTabs(),
-            Expanded(child: _buildGrid()),
-          ],
+        child: BlocListener<AreaCubit, AreaState>(
+          listener: (context, state) {
+            if (state is AreaSuccess) {
+              final areaId = state.selectedIndex;
+
+              context.read<TableCubit>().loadTables(areaId);
+            }
+          },
+          child: Column(
+            children: [
+              _buildTopBar(),
+              _buildGreeting(),
+              _buildSummaryBadges(),
+              _buildFloorTabs(),
+              Expanded(child: _buildGrid()),
+            ],
+          ),
         ),
       ),
       floatingActionButton: _buildFAB(),
@@ -125,7 +130,11 @@ class _TableScreenState extends State<TableScreen> {
               color: AppColors.secondary,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.person, color: AppColors.background, size: 20),
+            child: const Icon(
+              Icons.person,
+              color: AppColors.background,
+              size: 20,
+            ),
           ),
         ],
       ),
@@ -171,9 +180,15 @@ class _TableScreenState extends State<TableScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          _summaryBadge('${_emptyCount.toString().padLeft(2, '0')} Bàn trống', AppColors.success),
+          _summaryBadge(
+            '${_emptyCount.toString().padLeft(2, '0')} Bàn trống',
+            AppColors.success,
+          ),
           const SizedBox(width: 10),
-          _summaryBadge('${_occupiedCount.toString().padLeft(2, '0')} Đang có khách', AppColors.error),
+          _summaryBadge(
+            '${_occupiedCount.toString().padLeft(2, '0')} Đang có khách',
+            AppColors.error,
+          ),
           const SizedBox(width: 10),
           _summaryBadge('02', AppColors.info),
         ],
@@ -191,26 +206,105 @@ class _TableScreenState extends State<TableScreen> {
       ),
       child: Text(
         label,
-        style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
 
   // ── Floor tabs ────────────────────────────────────────────────────────────
   Widget _buildFloorTabs() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: List.generate(_floors.length, (i) {
-            final selected = i == _selectedFloor;
+    return BlocBuilder<AreaCubit, AreaState>(
+      builder: (context, state) {
+        if (state is AreaLoading) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Shimmer.fromColors(
+                baseColor: const Color(0xFFE0E0E0),
+                highlightColor: const Color(0xFFF5F5F5),
+                child: Row(
+                  children: List.generate(
+                    4,
+                    (_) => Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      width: 80,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white, // phải là Colors.white
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        if (state is AreaError) {
+          return Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Text(state.message),
+          );
+        }
+
+        if (state is AreaSuccess && state.areas.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Text('Không có khu vực nào'),
+          );
+        }
+        final successState = state as AreaSuccess;
+        final areas = successState.areas;
+        final selectedIndex = successState.selectedIndex;
+        final allTabs = [
+          GestureDetector(
+            onTap: () => context.read<AreaCubit>().selectArea(-1),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: selectedIndex == -1
+                    ? AppColors.primary
+                    : AppColors.surface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: selectedIndex == -1
+                      ? AppColors.primary
+                      : AppColors.border,
+                ),
+              ),
+              child: Text(
+                'Tất cả',
+                style: TextStyle(
+                  color: selectedIndex == -1
+                      ? AppColors.onPrimary
+                      : AppColors.onSurfaceMuted,
+                  fontWeight: selectedIndex == -1
+                      ? FontWeight.w700
+                      : FontWeight.w500,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ),
+          ...List.generate(areas.length, (i) {
+            final areaSelect = areas[i];
+            final selected = areaSelect.id == selectedIndex;
             return GestureDetector(
-              onTap: () => setState(() => _selectedFloor = i),
+              onTap: () => context.read<AreaCubit>().selectArea(areaSelect.id),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 margin: const EdgeInsets.only(right: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: selected ? AppColors.primary : AppColors.surface,
                   borderRadius: BorderRadius.circular(8),
@@ -219,9 +313,11 @@ class _TableScreenState extends State<TableScreen> {
                   ),
                 ),
                 child: Text(
-                  _floors[i],
+                  areaSelect.name,
                   style: TextStyle(
-                    color: selected ? AppColors.onPrimary : AppColors.onSurfaceMuted,
+                    color: selected
+                        ? AppColors.onPrimary
+                        : AppColors.onSurfaceMuted,
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                     fontSize: 13,
                   ),
@@ -229,27 +325,54 @@ class _TableScreenState extends State<TableScreen> {
               ),
             );
           }),
-        ),
-      ),
+        ];
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(children: allTabs),
+          ),
+        );
+      },
     );
   }
 
   // ── Grid ─────────────────────────────────────────────────────────────────
   Widget _buildGrid() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: GridView.builder(
-        itemCount: tables.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.1,
-        ),
-        itemBuilder: (_, i) => _TableCard(table: tables[i]),
-      ),
-    );
-  }
+  return BlocBuilder<TableCubit, TableState>(
+    builder: (context, state) {
+      if (state is TableLoading) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      if (state is TableError) {
+        return Center(child: Text(state.message));
+      }
+
+      if (state is TableSuccess) {
+        final tables = state.tables;
+
+        if (tables.isEmpty) {
+          return const Center(child: Text('Không có bàn'));
+        }
+
+        return GridView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: tables.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.1,
+          ),
+          itemBuilder: (_, i) => _TableCard(table: tables[i]),
+        );
+      }
+
+      return const SizedBox();
+    },
+  );
+}
 
   // ── FAB ───────────────────────────────────────────────────────────────────
   Widget _buildFAB() {
@@ -288,16 +411,22 @@ class _TableScreenState extends State<TableScreen> {
                   children: [
                     Icon(
                       items[i].$1,
-                      color: selected ? AppColors.primary : AppColors.onSurfaceMuted,
+                      color: selected
+                          ? AppColors.primary
+                          : AppColors.onSurfaceMuted,
                       size: 22,
                     ),
                     const SizedBox(height: 3),
                     Text(
                       items[i].$2,
                       style: TextStyle(
-                        color: selected ? AppColors.primary : AppColors.onSurfaceMuted,
+                        color: selected
+                            ? AppColors.primary
+                            : AppColors.onSurfaceMuted,
                         fontSize: 11,
-                        fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+                        fontWeight: selected
+                            ? FontWeight.w700
+                            : FontWeight.w400,
                       ),
                     ),
                   ],
@@ -313,12 +442,12 @@ class _TableScreenState extends State<TableScreen> {
 
 // ─── Table Card ───────────────────────────────────────────────────────────────
 class _TableCard extends StatelessWidget {
-  final TableData table;
+  final entities.Table table;
 
   const _TableCard({required this.table});
 
   Color get _statusColor {
-    switch (table.status) {
+    switch (TableStatus.empty) {
       case TableStatus.empty:
         return AppColors.success;
       case TableStatus.occupied:
@@ -331,7 +460,7 @@ class _TableCard extends StatelessWidget {
   }
 
   String get _statusLabel {
-    switch (table.status) {
+    switch (TableStatus.empty) {
       case TableStatus.empty:
         return 'BÀN TRỐNG';
       case TableStatus.occupied:
@@ -352,10 +481,7 @@ class _TableCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: _statusColor.withOpacity(0.35),
-          width: 1.2,
-        ),
+        border: Border.all(color: _statusColor.withOpacity(0.35), width: 1.2),
         boxShadow: [
           BoxShadow(
             color: _statusColor.withOpacity(0.08),
@@ -372,7 +498,7 @@ class _TableCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                table.id,
+                table.id.toString(),
                 style: const TextStyle(
                   color: AppColors.onSurface,
                   fontWeight: FontWeight.w700,
@@ -385,7 +511,10 @@ class _TableCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             '${table.chairs} GHẾ',
-            style: const TextStyle(color: AppColors.onSurfaceMuted, fontSize: 11),
+            style: const TextStyle(
+              color: AppColors.onSurfaceMuted,
+              fontSize: 11,
+            ),
           ),
           const Spacer(),
 
@@ -399,62 +528,77 @@ class _TableCard extends StatelessWidget {
                   foregroundColor: AppColors.success,
                   side: const BorderSide(color: AppColors.success),
                   padding: const EdgeInsets.symmetric(vertical: 6),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 child: const Text('Mở bàn'),
               ),
             ),
 
           // Occupied / reserved / paying → info rows
-          if (!isEmpty) ...[
-            if (table.total != null)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'TỔNG CỘNG',
-                    style: const TextStyle(color: AppColors.onSurfaceMuted, fontSize: 10),
-                  ),
-                  Text(
-                    table.total!,
-                    style: const TextStyle(
-                      color: AppColors.onSurface,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-            if (table.time != null)
-              Row(
-                children: [
-                  Icon(
-                    table.status == TableStatus.reserved
-                        ? Icons.calendar_today
-                        : Icons.access_time,
-                    color: _statusColor,
-                    size: 13,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    table.time!,
-                    style: TextStyle(color: _statusColor, fontSize: 12),
-                  ),
-                ],
-              ),
-            if (table.note != null)
-              Row(
-                children: [
-                  const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 13),
-                  const SizedBox(width: 4),
-                  Text(
-                    table.note!,
-                    style: const TextStyle(color: AppColors.warning, fontSize: 11),
-                  ),
-                ],
-              ),
-          ],
+          // if (!isEmpty) ...[
+          //   if (table.total != null)
+          //     Column(
+          //       crossAxisAlignment: CrossAxisAlignment.start,
+          //       children: [
+          //         Text(
+          //           'TỔNG CỘNG',
+          //           style: const TextStyle(
+          //             color: AppColors.onSurfaceMuted,
+          //             fontSize: 10,
+          //           ),
+          //         ),
+          //         Text(
+          //           table.total!,
+          //           style: const TextStyle(
+          //             color: AppColors.onSurface,
+          //             fontWeight: FontWeight.w700,
+          //             fontSize: 16,
+          //           ),
+          //         ),
+          //       ],
+          //     ),
+          //   if (table.time != null)
+          //     Row(
+          //       children: [
+          //         Icon(
+          //           table.status == TableStatus.reserved
+          //               ? Icons.calendar_today
+          //               : Icons.access_time,
+          //           color: _statusColor,
+          //           size: 13,
+          //         ),
+          //         const SizedBox(width: 4),
+          //         Text(
+          //           table.time!,
+          //           style: TextStyle(color: _statusColor, fontSize: 12),
+          //         ),
+          //       ],
+          //     ),
+          //   if (table.note != null)
+          //     Row(
+          //       children: [
+          //         const Icon(
+          //           Icons.warning_amber_rounded,
+          //           color: AppColors.warning,
+          //           size: 13,
+          //         ),
+          //         const SizedBox(width: 4),
+          //         Text(
+          //           table.note!,
+          //           style: const TextStyle(
+          //             color: AppColors.warning,
+          //             fontSize: 11,
+          //           ),
+          //         ),
+          //       ],
+          //     ),
+          // ],
         ],
       ),
     );
