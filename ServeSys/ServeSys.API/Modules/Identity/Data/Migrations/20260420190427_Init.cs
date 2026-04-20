@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ServeSys.API.Modules.Identity.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class InitIdentityDbContext : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -186,7 +186,7 @@ namespace ServeSys.API.Modules.Identity.Data.Migrations
             migrationBuilder.InsertData(
                 table: "Users",
                 columns: new[] { "Id", "AccessFailedCount", "AvatarUrl", "ConcurrencyStamp", "CreatedAt", "Email", "EmailConfirmed", "FullName", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "SecurityStamp", "TwoFactorEnabled", "UserName" },
-                values: new object[] { "9c249aff-52cd-4cd0-9a7b-7550afca359b", 0, "", "a78f802a-3139-4ee4-a5ed-ac9ad706ab5f", new DateTime(2026, 4, 14, 10, 43, 43, 613, DateTimeKind.Utc).AddTicks(8868), "admin@servesys.com", true, "System Admin", false, null, "ADMIN@SERVESYS.COM", "ADMIN@SERVESYS.COM", "AQAAAAIAAYagAAAAEDL6UgD60YRfwGRqvYrVUfAHrc4BG/rAcy/mpNx08LgBk8Clq/HI6WiKs4pxkyvE9Q==", null, false, "7c80bbf2-7bf7-451e-ae6c-b4f42e8077b7", false, "admin@servesys.com" });
+                values: new object[] { "3aa79b69-1ce7-4e42-9f4b-1784dcb7db93", 0, "", "5a0d3964-0fc0-4b72-8986-698f138d2d8b", new DateTime(2026, 4, 20, 19, 4, 25, 126, DateTimeKind.Utc).AddTicks(4466), "admin@servesys.com", true, "System Admin", false, null, "ADMIN@SERVESYS.COM", "ADMIN@SERVESYS.COM", "AQAAAAIAAYagAAAAECOp6GxGREn2mYIgdRSG1FcpCiqeV6nvEbnjBP4TgF9oErqSJaCljwE+kgRwCyUEdg==", null, false, "94121caa-ed8d-40d8-a1ef-cf04ef1656af", false, "admin@servesys.com" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",

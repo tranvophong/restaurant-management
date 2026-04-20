@@ -3,12 +3,10 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
-
 namespace ServeSys.API.Modules.Order.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class InitOrderDbContext : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -40,6 +38,8 @@ namespace ServeSys.API.Modules.Order.Data.Migrations
                     Status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
                     Notes = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     TotalAmount = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    StaffName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    StaffId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     DiningTableId = table.Column<int>(type: "int", nullable: false)
@@ -51,6 +51,12 @@ namespace ServeSys.API.Modules.Order.Data.Migrations
                         name: "FK_Orders_DiningTables_DiningTableId",
                         column: x => x.DiningTableId,
                         principalTable: "DiningTables",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Orders_Users_StaffId",
+                        column: x => x.StaffId,
+                        principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -114,17 +120,6 @@ namespace ServeSys.API.Modules.Order.Data.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.InsertData(
-                table: "MenuCategories",
-                columns: new[] { "Id", "CreatedAt", "Description", "DisplayOrder", "IsActive", "Name" },
-                values: new object[,]
-                {
-                    { 1, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, 1, true, "Khai vị" },
-                    { 2, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, 2, true, "Món chính" },
-                    { 3, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, 3, true, "Tráng miệng" },
-                    { 4, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), null, 4, true, "Đồ uống" }
-                });
-
             migrationBuilder.CreateIndex(
                 name: "IX_MenuCategories_Name",
                 table: "MenuCategories",
@@ -156,6 +151,11 @@ namespace ServeSys.API.Modules.Order.Data.Migrations
                 table: "Orders",
                 column: "OrderCode",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Orders_StaffId",
+                table: "Orders",
+                column: "StaffId");
         }
 
         /// <inheritdoc />

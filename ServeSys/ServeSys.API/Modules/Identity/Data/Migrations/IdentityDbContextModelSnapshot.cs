@@ -280,20 +280,20 @@ namespace ServeSys.API.Modules.Identity.Data.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "9c249aff-52cd-4cd0-9a7b-7550afca359b",
+                            Id = "3aa79b69-1ce7-4e42-9f4b-1784dcb7db93",
                             AccessFailedCount = 0,
                             AvatarUrl = "",
-                            ConcurrencyStamp = "a78f802a-3139-4ee4-a5ed-ac9ad706ab5f",
-                            CreatedAt = new DateTime(2026, 4, 14, 10, 43, 43, 613, DateTimeKind.Utc).AddTicks(8868),
+                            ConcurrencyStamp = "5a0d3964-0fc0-4b72-8986-698f138d2d8b",
+                            CreatedAt = new DateTime(2026, 4, 20, 19, 4, 25, 126, DateTimeKind.Utc).AddTicks(4466),
                             Email = "admin@servesys.com",
                             EmailConfirmed = true,
                             FullName = "System Admin",
                             LockoutEnabled = false,
                             NormalizedEmail = "ADMIN@SERVESYS.COM",
                             NormalizedUserName = "ADMIN@SERVESYS.COM",
-                            PasswordHash = "AQAAAAIAAYagAAAAEDL6UgD60YRfwGRqvYrVUfAHrc4BG/rAcy/mpNx08LgBk8Clq/HI6WiKs4pxkyvE9Q==",
+                            PasswordHash = "AQAAAAIAAYagAAAAECOp6GxGREn2mYIgdRSG1FcpCiqeV6nvEbnjBP4TgF9oErqSJaCljwE+kgRwCyUEdg==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "7c80bbf2-7bf7-451e-ae6c-b4f42e8077b7",
+                            SecurityStamp = "94121caa-ed8d-40d8-a1ef-cf04ef1656af",
                             TwoFactorEnabled = false,
                             UserName = "admin@servesys.com"
                         });

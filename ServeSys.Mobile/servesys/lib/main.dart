@@ -30,12 +30,12 @@ class ServeSysApp extends StatelessWidget {
         providers: [
           BlocProvider(
             create: (_) => AreaCubit(
-              areaRepository: AreaRepository(apiClient: DioClient()),
+              areaRepository: AreaRepository(DioClient()),
             )..loadAreas(),
           ),
           BlocProvider(
             create: (_) => TableCubit(
-              tableRepository: TableRepository(apiClient: DioClient()),
+              tableRepository: TableRepository(DioClient()),
             )..loadTables(-1),
           ),
         ],

@@ -161,5 +161,14 @@ public class OrderDbContext : DbContext
 
         modelBuilder.Entity<Area>()
                     .ToTable("Areas", t => t.ExcludeFromMigrations());
+
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.ToTable("Users", t => t.ExcludeFromMigrations());
+            entity.Ignore(u => u.RefreshTokens);
+        });
+
+        modelBuilder.Entity<RefreshToken>()
+                    .ToTable("RefreshTokens", t => t.ExcludeFromMigrations());
     }
 }

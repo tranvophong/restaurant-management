@@ -7,6 +7,7 @@ import 'package:servesys/features/home/bloc/table_cubit.dart';
 import 'package:servesys/features/home/bloc/table_state.dart';
 import 'package:servesys/features/home/domain/entities/table.dart' as entities;
 import 'package:servesys/features/home/domain/enums/table_status.dart';
+import 'package:servesys/features/home/extensions/table_status_extension.dart';
 import 'package:shimmer/shimmer.dart';
 
 class TableData {
@@ -36,14 +37,8 @@ const List<TableData> tables = [
     total: '1.250k',
     time: null,
   ),
-  TableData(id: 'A04', chairs: 2, status: TableStatus.empty),
+  TableData(id: 'A04', chairs: 2, status: TableStatus.available),
   TableData(id: 'V02', chairs: 8, status: TableStatus.reserved, time: '19:30'),
-  TableData(
-    id: 'B05',
-    chairs: 4,
-    status: TableStatus.paying,
-    note: 'Vừa thanh toán',
-  ),
   TableData(
     id: 'B07',
     chairs: 4,
@@ -51,7 +46,7 @@ const List<TableData> tables = [
     time: '45p',
     total: '820k',
   ),
-  TableData(id: 'A09', chairs: 2, status: TableStatus.empty),
+  TableData(id: 'A09', chairs: 2, status: TableStatus.available),
 ];
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -66,7 +61,7 @@ class _TableScreenState extends State<HomeScreen> {
   int _selectedNav = 0;
 
   int get _emptyCount =>
-      tables.where((t) => t.status == TableStatus.empty).length;
+      tables.where((t) => t.status == TableStatus.available).length;
   int get _occupiedCount =>
       tables.where((t) => t.status == TableStatus.occupied).length;
 
@@ -446,45 +441,20 @@ class _TableCard extends StatelessWidget {
 
   const _TableCard({required this.table});
 
-  Color get _statusColor {
-    switch (TableStatus.empty) {
-      case TableStatus.empty:
-        return AppColors.success;
-      case TableStatus.occupied:
-        return AppColors.error;
-      case TableStatus.reserved:
-        return AppColors.info;
-      case TableStatus.paying:
-        return AppColors.warning;
-    }
-  }
-
-  String get _statusLabel {
-    switch (TableStatus.empty) {
-      case TableStatus.empty:
-        return 'BÀN TRỐNG';
-      case TableStatus.occupied:
-        return 'ĐANG CÓ KHÁCH';
-      case TableStatus.reserved:
-        return 'ĐÃ ĐẶT TRƯỚC';
-      case TableStatus.paying:
-        return 'ĐANG ĐÓN';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final isEmpty = table.status == TableStatus.empty;
-
+    final isEmpty = table.status == TableStatus.available;
+    final statusColor = table.status.color;
+    final statusLabel = table.status.label;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _statusColor.withOpacity(0.35), width: 1.2),
+        border: Border.all(color: statusColor.withOpacity(0.35), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: _statusColor.withOpacity(0.08),
+            color: statusColor.withOpacity(0.08),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -505,7 +475,7 @@ class _TableCard extends StatelessWidget {
                   fontSize: 15,
                 ),
               ),
-              _StatusBadge(label: _statusLabel, color: _statusColor),
+              _StatusBadge(label: statusLabel, color: statusColor),
             ],
           ),
           const SizedBox(height: 4),

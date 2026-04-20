@@ -1,1 +1,1 @@
-enum TableStatus { empty, occupied, reserved, paying }
+enum TableStatus { available, occupied, reserved }

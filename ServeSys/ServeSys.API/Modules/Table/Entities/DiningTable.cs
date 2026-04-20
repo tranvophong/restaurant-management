@@ -3,9 +3,8 @@ namespace ServeSys.API.Modules.Table.Entities;
 public enum TableStatus
 {
     Available,   // Bàn trống
-    Occupied,    // Bàn đang có khách
-    Reserved,    // Bàn đã đặt trước
-    Cleaning     // Bàn đang dọn dẹp
+    Occupied,    // Có khách đang ngồi
+    Reserved
 }
 
 public class DiningTable

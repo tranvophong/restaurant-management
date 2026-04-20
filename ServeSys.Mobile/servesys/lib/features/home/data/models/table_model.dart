@@ -1,9 +1,11 @@
 import 'package:servesys/features/home/domain/entities/table.dart';
+import 'package:servesys/features/home/domain/enums/table_status.dart';
+import 'package:servesys/features/home/extensions/table_status_parsing.dart';
 
 class TableModel {
   int id;
   String name;
-  String status;
+  TableStatus status;
   int chairs;
   bool isAvailable;
 
@@ -19,7 +21,7 @@ class TableModel {
     return TableModel(
       id: json['id'],
       name: json['name'],
-      status: json['status'],
+      status: json['status'].toString().toTableStatus(),
       chairs: json['seats'],
       isAvailable: json['isAvailable'],
     );
@@ -29,7 +31,7 @@ class TableModel {
     return {
       'id': id,
       'name': name,
-      'status': status,
+      'status': status.name,
       'seats': chairs,
       'isAvailable': isAvailable,
     };

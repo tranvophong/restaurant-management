@@ -55,7 +55,10 @@ namespace ServeSys.API.Modules.Order.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshToken");
+                    b.ToTable("RefreshTokens", null, t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
                 });
 
             modelBuilder.Entity("ServeSys.API.Modules.Identity.Entities.User", b =>
@@ -118,7 +121,10 @@ namespace ServeSys.API.Modules.Order.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("User");
+                    b.ToTable("Users", null, t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
                 });
 
             modelBuilder.Entity("ServeSys.API.Modules.Order.Entities.MenuCategory", b =>
@@ -381,7 +387,7 @@ namespace ServeSys.API.Modules.Order.Data.Migrations
             modelBuilder.Entity("ServeSys.API.Modules.Identity.Entities.RefreshToken", b =>
                 {
                     b.HasOne("ServeSys.API.Modules.Identity.Entities.User", "User")
-                        .WithMany("RefreshTokens")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -443,11 +449,6 @@ namespace ServeSys.API.Modules.Order.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Area");
-                });
-
-            modelBuilder.Entity("ServeSys.API.Modules.Identity.Entities.User", b =>
-                {
-                    b.Navigation("RefreshTokens");
                 });
 
             modelBuilder.Entity("ServeSys.API.Modules.Order.Entities.MenuCategory", b =>

@@ -12,8 +12,8 @@ using ServeSys.API.Modules.Table.Data;
 namespace ServeSys.API.Modules.Table.Data.Migrations
 {
     [DbContext(typeof(TableDbContext))]
-    [Migration("20260414104350_Init-TableDbContext")]
-    partial class InitTableDbContext
+    [Migration("20260420190508_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

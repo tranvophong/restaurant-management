@@ -1,7 +1,9 @@
+import 'package:servesys/features/home/domain/enums/table_status.dart';
+
 class Table {
   int id;
   String name;
-  String status;
+  TableStatus status;
   int chairs;
   bool isAvailable;
 

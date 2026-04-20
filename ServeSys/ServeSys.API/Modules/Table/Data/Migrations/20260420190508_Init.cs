@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ServeSys.API.Modules.Table.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class InitTableDbContext : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
