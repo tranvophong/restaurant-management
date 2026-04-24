@@ -8,7 +8,6 @@ namespace ServeSys.API.Modules.Order.Data
         public static async Task SeedAsync(OrderDbContext dbContext)
         {
             await SeedMenuCategoriesAsync(dbContext);
-            await dbContext.SaveChangesAsync();
         }
 
         private static async Task SeedMenuCategoriesAsync(OrderDbContext dbContext)
@@ -27,15 +26,16 @@ namespace ServeSys.API.Modules.Order.Data
                         IsActive = true }
                 };
                 await dbContext.MenuCategories.AddRangeAsync(categories);
+                await dbContext.SaveChangesAsync();
             }
 
             if (!dbContext.MenuItems.Any())
             {
                 var categories = await dbContext.MenuCategories.ToListAsync();
-                var khaiVi = categories.First(c => c.Name == "Khai vị");
-                var monChinh = categories.First(c => c.Name == "Món chính");
-                var trangMieng = categories.First(c => c.Name == "Tráng miệng");
-                var doUong = categories.First(c => c.Name == "Đồ uống");
+                var khaiVi = categories.First(c => c.Name.ToLower() == "khai vị");
+                var monChinh = categories.First(c => c.Name.ToLower() == "món chính");
+                var trangMieng = categories.First(c => c.Name.ToLower() == "tráng miệng");
+                var doUong = categories.First(c => c.Name.ToLower() == "đồ uống");
 
                 var items = new List<MenuItem>
                 {
@@ -84,6 +84,7 @@ namespace ServeSys.API.Modules.Order.Data
                         MenuCategoryId = doUong.Id, DisplayOrder = 3 }
                 };
                 await dbContext.MenuItems.AddRangeAsync(items);
+                await dbContext.SaveChangesAsync();
             }
         }
     }

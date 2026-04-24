@@ -7,6 +7,9 @@ import 'package:servesys/features/home/bloc/table_cubit.dart';
 import 'package:servesys/features/home/data/repositories/area_repository.dart';
 import 'package:servesys/features/home/data/repositories/table_repository.dart';
 import 'package:servesys/features/home/screens/home_screen.dart';
+import 'package:servesys/features/menu/bloc/menu_category_cubit.dart';
+import 'package:servesys/features/menu/bloc/menu_item_cubit.dart';
+import 'package:servesys/features/menu/data/repositories/menu_repository.dart';
 
 void main() {
   runApp(const ServeSysApp());
@@ -29,15 +32,21 @@ class ServeSysApp extends StatelessWidget {
       home: MultiBlocProvider(
         providers: [
           BlocProvider(
-            create: (_) => AreaCubit(
-              areaRepository: AreaRepository(DioClient()),
-            )..loadAreas(),
+            create: (_) =>
+                AreaCubit(areaRepository: AreaRepository(DioClient()))
+                  ..loadAreas(),
           ),
           BlocProvider(
-            create: (_) => TableCubit(
-              tableRepository: TableRepository(DioClient()),
-            )..loadTables(-1),
+            create: (_) =>
+                TableCubit(tableRepository: TableRepository(DioClient()))
+                  ..loadTables(-1),
           ),
+          BlocProvider(
+            create: (_) =>
+                MenuCategoryCubit(menuRepository: MenuRepository(DioClient()))
+                  ..loadCategories(),
+          ),
+          BlocProvider(create: (_) => MenuItemCubit(menuRepository: MenuRepository(DioClient()))..loadMenuItems(-1),)
         ],
         child: const HomeScreen(),
       ),

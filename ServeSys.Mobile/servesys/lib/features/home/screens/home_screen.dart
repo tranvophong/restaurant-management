@@ -8,105 +8,148 @@ import 'package:servesys/features/home/bloc/table_state.dart';
 import 'package:servesys/features/home/domain/entities/table.dart' as entities;
 import 'package:servesys/features/home/domain/enums/table_status.dart';
 import 'package:servesys/features/home/extensions/table_status_extension.dart';
+import 'package:servesys/features/menu/screens/menu_screen.dart';
 import 'package:shimmer/shimmer.dart';
-
-class TableData {
-  final String id;
-  final int chairs;
-  final TableStatus status;
-  final String? note;
-  final String? time;
-  final String? total;
-
-  const TableData({
-    required this.id,
-    required this.chairs,
-    required this.status,
-    this.note,
-    this.time,
-    this.total,
-  });
-}
-
-// ─── Static data ─────────────────────────────────────────────────────────────
-const List<TableData> tables = [
-  TableData(
-    id: 'B01',
-    chairs: 4,
-    status: TableStatus.occupied,
-    total: '1.250k',
-    time: null,
-  ),
-  TableData(id: 'A04', chairs: 2, status: TableStatus.available),
-  TableData(id: 'V02', chairs: 8, status: TableStatus.reserved, time: '19:30'),
-  TableData(
-    id: 'B07',
-    chairs: 4,
-    status: TableStatus.occupied,
-    time: '45p',
-    total: '820k',
-  ),
-  TableData(id: 'A09', chairs: 2, status: TableStatus.available),
-];
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _TableScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _TableScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> {
   int _selectedNav = 0;
 
-  int get _emptyCount =>
-      tables.where((t) => t.status == TableStatus.available).length;
-  int get _occupiedCount =>
-      tables.where((t) => t.status == TableStatus.occupied).length;
+
+  static const List<Widget> _screens = [
+    _TablesTab(),
+    MenuScreen(),    
+    _OrdersTab(),  
+    _ProfileTab(),  
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: BlocListener<AreaCubit, AreaState>(
-          listener: (context, state) {
-            if (state is AreaSuccess) {
-              final areaId = state.selectedIndex;
-
-              context.read<TableCubit>().loadTables(areaId);
-            }
-          },
-          child: Column(
-            children: [
-              _buildTopBar(),
-              _buildGreeting(),
-              _buildSummaryBadges(),
-              _buildFloorTabs(),
-              Expanded(child: _buildGrid()),
-            ],
-          ),
+        child: IndexedStack(
+          index: _selectedNav,
+          children: _screens,
         ),
       ),
-      floatingActionButton: _buildFAB(),
       bottomNavigationBar: _buildBottomNav(),
     );
   }
 
-  // ── Top bar ──────────────────────────────────────────────────────────────
+  // ── Bottom Nav ────────────────────────────────────────────────────────────
+  Widget _buildBottomNav() {
+    const items = [
+      (Icons.table_restaurant, 'Tables'),
+      (Icons.restaurant_menu, 'Menu'),
+      (Icons.receipt_long, 'Orders'),
+      (Icons.person_outline, 'Profile'),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: List.generate(items.length, (i) {
+              final selected = i == _selectedNav;
+              return GestureDetector(
+                onTap: () => setState(() => _selectedNav = i),
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        child: Icon(
+                          items[i].$1,
+                          key: ValueKey(selected),
+                          color: selected ? AppColors.primary : AppColors.onSurfaceMuted,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        items[i].$2,
+                        style: TextStyle(
+                          color: selected ? AppColors.primary : AppColors.onSurfaceMuted,
+                          fontSize: 11,
+                          fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      // Indicator dot
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: selected ? 18 : 0,
+                        height: 3,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Tab 0: Tables ────────────────────────────────────────────────────────────
+class _TablesTab extends StatelessWidget {
+  const _TablesTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<AreaCubit, AreaState>(
+      listener: (context, state) {
+        if (state is AreaSuccess) {
+          context.read<TableCubit>().loadTables(state.selectedIndex);
+        }
+      },
+      child: Column(
+        children: [
+          _buildTopBar(),
+          _buildGreeting(),
+          _buildSummaryBadges(context),
+          _buildFloorTabs(context),
+          Expanded(child: _buildGrid()),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTopBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Logo / brand
           Row(
             children: [
-              Icon(Icons.restaurant_menu, color: AppColors.primary, size: 20),
+              const Icon(Icons.restaurant_menu, color: AppColors.primary, size: 20),
               const SizedBox(width: 6),
-              Text(
+              const Text(
                 'ServeSys',
                 style: TextStyle(
                   color: AppColors.onSurface,
@@ -117,29 +160,22 @@ class _TableScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          // Avatar
           Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
+            width: 36, height: 36,
+            decoration: const BoxDecoration(
               color: AppColors.secondary,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.person,
-              color: AppColors.background,
-              size: 20,
-            ),
+            child: const Icon(Icons.person, color: AppColors.background, size: 20),
           ),
         ],
       ),
     );
   }
 
-  // ── Greeting ─────────────────────────────────────────────────────────────
   Widget _buildGreeting() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16),
       child: Align(
         alignment: Alignment.centerLeft,
         child: Column(
@@ -155,10 +191,10 @@ class _TableScreenState extends State<HomeScreen> {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const Text('👋', style: TextStyle(fontSize: 22)),
+                Text('👋', style: TextStyle(fontSize: 22)),
               ],
             ),
-            const SizedBox(height: 2),
+            SizedBox(height: 2),
             Text(
               'Hôm nay bạn có 12 bàn cần phục vụ.',
               style: TextStyle(color: AppColors.onSurfaceMuted, fontSize: 13),
@@ -169,21 +205,14 @@ class _TableScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Summary badges ────────────────────────────────────────────────────────
-  Widget _buildSummaryBadges() {
+  Widget _buildSummaryBadges(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          _summaryBadge(
-            '${_emptyCount.toString().padLeft(2, '0')} Bàn trống',
-            AppColors.success,
-          ),
+          _summaryBadge('0 Bàn trống', AppColors.success),
           const SizedBox(width: 10),
-          _summaryBadge(
-            '${_occupiedCount.toString().padLeft(2, '0')} Đang có khách',
-            AppColors.error,
-          ),
+          _summaryBadge('0 Đang có khách', AppColors.error),
           const SizedBox(width: 10),
           _summaryBadge('02', AppColors.info),
         ],
@@ -210,28 +239,24 @@ class _TableScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Floor tabs ────────────────────────────────────────────────────────────
-  Widget _buildFloorTabs() {
+  Widget _buildFloorTabs(BuildContext context) {
     return BlocBuilder<AreaCubit, AreaState>(
       builder: (context, state) {
         if (state is AreaLoading) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Shimmer.fromColors(
-                baseColor: const Color(0xFFE0E0E0),
-                highlightColor: const Color(0xFFF5F5F5),
-                child: Row(
-                  children: List.generate(
-                    4,
-                    (_) => Container(
-                      margin: const EdgeInsets.only(right: 8),
-                      width: 80,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.white, // phải là Colors.white
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Shimmer.fromColors(
+              baseColor: const Color(0xFFE0E0E0),
+              highlightColor: const Color(0xFFF5F5F5),
+              child: Row(
+                children: List.generate(
+                  4,
+                  (_) => Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    width: 80, height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                 ),
@@ -242,7 +267,7 @@ class _TableScreenState extends State<HomeScreen> {
 
         if (state is AreaError) {
           return Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(state.message),
           );
         }
@@ -253,74 +278,24 @@ class _TableScreenState extends State<HomeScreen> {
             child: Text('Không có khu vực nào'),
           );
         }
+
         final successState = state as AreaSuccess;
         final areas = successState.areas;
         final selectedIndex = successState.selectedIndex;
+
         final allTabs = [
-          GestureDetector(
+          _floorChip(
+            label: 'Tất cả',
+            selected: selectedIndex == -1,
             onTap: () => context.read<AreaCubit>().selectArea(-1),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: selectedIndex == -1
-                    ? AppColors.primary
-                    : AppColors.surface,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: selectedIndex == -1
-                      ? AppColors.primary
-                      : AppColors.border,
-                ),
-              ),
-              child: Text(
-                'Tất cả',
-                style: TextStyle(
-                  color: selectedIndex == -1
-                      ? AppColors.onPrimary
-                      : AppColors.onSurfaceMuted,
-                  fontWeight: selectedIndex == -1
-                      ? FontWeight.w700
-                      : FontWeight.w500,
-                  fontSize: 13,
-                ),
-              ),
-            ),
           ),
-          ...List.generate(areas.length, (i) {
-            final areaSelect = areas[i];
-            final selected = areaSelect.id == selectedIndex;
-            return GestureDetector(
-              onTap: () => context.read<AreaCubit>().selectArea(areaSelect.id),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.only(right: 8),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: selected ? AppColors.primary : AppColors.surface,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: selected ? AppColors.primary : AppColors.border,
-                  ),
-                ),
-                child: Text(
-                  areaSelect.name,
-                  style: TextStyle(
-                    color: selected
-                        ? AppColors.onPrimary
-                        : AppColors.onSurfaceMuted,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-            );
-          }),
+          ...areas.map((area) => _floorChip(
+            label: area.name,
+            selected: area.id == selectedIndex,
+            onTap: () => context.read<AreaCubit>().selectArea(area.id),
+          )),
         ];
+
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: SingleChildScrollView(
@@ -332,104 +307,125 @@ class _TableScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Grid ─────────────────────────────────────────────────────────────────
-  Widget _buildGrid() {
-  return BlocBuilder<TableCubit, TableState>(
-    builder: (context, state) {
-      if (state is TableLoading) {
-        return const Center(child: CircularProgressIndicator());
-      }
-
-      if (state is TableError) {
-        return Center(child: Text(state.message));
-      }
-
-      if (state is TableSuccess) {
-        final tables = state.tables;
-
-        if (tables.isEmpty) {
-          return const Center(child: Text('Không có bàn'));
-        }
-
-        return GridView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: tables.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.1,
+  Widget _floorChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : AppColors.surface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: selected ? AppColors.primary : AppColors.border,
           ),
-          itemBuilder: (_, i) => _TableCard(table: tables[i]),
-        );
-      }
-
-      return const SizedBox();
-    },
-  );
-}
-
-  // ── FAB ───────────────────────────────────────────────────────────────────
-  Widget _buildFAB() {
-    return FloatingActionButton(
-      onPressed: () {},
-      backgroundColor: AppColors.primary,
-      child: const Icon(Icons.add, color: AppColors.onPrimary),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? AppColors.onPrimary : AppColors.onSurfaceMuted,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            fontSize: 13,
+          ),
+        ),
+      ),
     );
   }
 
-  // ── Bottom nav ────────────────────────────────────────────────────────────
-  Widget _buildBottomNav() {
-    final items = [
-      (Icons.table_restaurant, 'Tables'),
-      (Icons.restaurant_menu, 'Menu'),
-      (Icons.receipt_long, 'Orders'),
-      (Icons.person_outline, 'Profile'),
-    ];
+  Widget _buildGrid() {
+    return BlocBuilder<TableCubit, TableState>(
+      builder: (context, state) {
+        if (state is TableLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (state is TableError) {
+          return Center(child: Text(state.message));
+        }
+        if (state is TableSuccess) {
+          final tables = state.tables;
+          if (tables.isEmpty) {
+            return const Center(child: Text('Không có bàn'));
+          }
+          return GridView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: tables.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.1,
+            ),
+            itemBuilder: (_, i) => _TableCard(table: tables[i]),
+          );
+        }
+        return const SizedBox();
+      },
+    );
+  }
+}
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border(top: BorderSide(color: AppColors.border, width: 1)),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(items.length, (i) {
-              final selected = i == _selectedNav;
-              return GestureDetector(
-                onTap: () => setState(() => _selectedNav = i),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      items[i].$1,
-                      color: selected
-                          ? AppColors.primary
-                          : AppColors.onSurfaceMuted,
-                      size: 22,
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      items[i].$2,
-                      style: TextStyle(
-                        color: selected
-                            ? AppColors.primary
-                            : AppColors.onSurfaceMuted,
-                        fontSize: 11,
-                        fontWeight: selected
-                            ? FontWeight.w700
-                            : FontWeight.w400,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
+// ─── Tab 2: Orders ────────────────────────────────────────────────────────────
+class _OrdersTab extends StatelessWidget {
+  const _OrdersTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.receipt_long, color: AppColors.primary, size: 48),
+          SizedBox(height: 12),
+          Text(
+            'Orders',
+            style: TextStyle(
+              color: AppColors.onSurface,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ),
+          SizedBox(height: 4),
+          Text(
+            'Màn hình quản lý đơn hàng',
+            style: TextStyle(color: AppColors.onSurfaceMuted, fontSize: 13),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Tab 3: Profile ───────────────────────────────────────────────────────────
+class _ProfileTab extends StatelessWidget {
+  const _ProfileTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.person_outline, color: AppColors.primary, size: 48),
+          SizedBox(height: 12),
+          Text(
+            'Profile',
+            style: TextStyle(
+              color: AppColors.onSurface,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            'Thông tin tài khoản',
+            style: TextStyle(color: AppColors.onSurfaceMuted, fontSize: 13),
+          ),
+        ],
       ),
     );
   }
@@ -446,6 +442,7 @@ class _TableCard extends StatelessWidget {
     final isEmpty = table.status == TableStatus.available;
     final statusColor = table.status.color;
     final statusLabel = table.status.label;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -463,7 +460,6 @@ class _TableCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header row: ID + status badge
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -487,13 +483,12 @@ class _TableCard extends StatelessWidget {
             ),
           ),
           const Spacer(),
-
-          // Empty table → Mở bàn button
           if (isEmpty)
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
-                onPressed: () {},
+                onPressed: () {
+                },
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.success,
                   side: const BorderSide(color: AppColors.success),
@@ -509,73 +504,13 @@ class _TableCard extends StatelessWidget {
                 child: const Text('Mở bàn'),
               ),
             ),
-
-          // Occupied / reserved / paying → info rows
-          // if (!isEmpty) ...[
-          //   if (table.total != null)
-          //     Column(
-          //       crossAxisAlignment: CrossAxisAlignment.start,
-          //       children: [
-          //         Text(
-          //           'TỔNG CỘNG',
-          //           style: const TextStyle(
-          //             color: AppColors.onSurfaceMuted,
-          //             fontSize: 10,
-          //           ),
-          //         ),
-          //         Text(
-          //           table.total!,
-          //           style: const TextStyle(
-          //             color: AppColors.onSurface,
-          //             fontWeight: FontWeight.w700,
-          //             fontSize: 16,
-          //           ),
-          //         ),
-          //       ],
-          //     ),
-          //   if (table.time != null)
-          //     Row(
-          //       children: [
-          //         Icon(
-          //           table.status == TableStatus.reserved
-          //               ? Icons.calendar_today
-          //               : Icons.access_time,
-          //           color: _statusColor,
-          //           size: 13,
-          //         ),
-          //         const SizedBox(width: 4),
-          //         Text(
-          //           table.time!,
-          //           style: TextStyle(color: _statusColor, fontSize: 12),
-          //         ),
-          //       ],
-          //     ),
-          //   if (table.note != null)
-          //     Row(
-          //       children: [
-          //         const Icon(
-          //           Icons.warning_amber_rounded,
-          //           color: AppColors.warning,
-          //           size: 13,
-          //         ),
-          //         const SizedBox(width: 4),
-          //         Text(
-          //           table.note!,
-          //           style: const TextStyle(
-          //             color: AppColors.warning,
-          //             fontSize: 11,
-          //           ),
-          //         ),
-          //       ],
-          //     ),
-          // ],
         ],
       ),
     );
   }
 }
 
-// ─── Status badge ─────────────────────────────────────────────────────────────
+// ─── Status Badge ─────────────────────────────────────────────────────────────
 class _StatusBadge extends StatelessWidget {
   final String label;
   final Color color;
