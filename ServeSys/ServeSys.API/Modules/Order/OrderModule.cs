@@ -24,12 +24,14 @@ public static class OrderModule
     public static IServiceCollection RegisterOrderServices(this IServiceCollection services)
     {
         services.AddScoped<IMenuService, MenuService>();
+        services.AddScoped<IOrderService, OrderService>();
         return services;
     }
 
     public static IServiceCollection RegisterOrderRepositories(this IServiceCollection services)
     {
         services.AddScoped<IMenuRepository, MenuRepository>();
+        services.AddScoped<IOrderRepository, OrderRepository>();
         return services;
     }
 

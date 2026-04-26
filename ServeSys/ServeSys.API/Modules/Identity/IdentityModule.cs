@@ -1,4 +1,3 @@
-using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -7,6 +6,8 @@ using ServeSys.API.Modules.Identity.Entities;
 using ServeSys.API.Modules.Identity.Helpers;
 using ServeSys.API.Modules.Identity.Interfaces;
 using ServeSys.API.Modules.Identity.Services;
+using ServeSys.API.Modules.Order.Data;
+using System.Text;
 
 namespace ServeSys.API.Modules.Identity;
 
@@ -61,5 +62,12 @@ public static class IdentityModule
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddScoped<JwtTokenHelper>();
         return services;
+    }
+
+    public static async Task SeedIdentityModuleAsync(this WebApplication app)
+    {
+        using var scope = app.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+        await IdentityModuleSeeder.SeedAsync(dbContext);
     }
 }

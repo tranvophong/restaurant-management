@@ -16,6 +16,7 @@ public class MenuItem
     public int DisplayOrder { get; set; }
 
     public bool IsAvailable { get; set; } = true;
+    public bool IsBestSeller { get; set; } = false;
 
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }

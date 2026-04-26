@@ -13,6 +13,7 @@
         public string? ImageUrl { get; set; }
 
         public int DisplayOrder { get; set; }
+        public bool IsBestSeller { get; set; } = false;
         public bool IsAvailable { get; set; } = true;
     }
 }

@@ -36,7 +36,8 @@ namespace ServeSys.API.Modules.Order.Services
                 Price = item.Price,
                 ImageUrl = item.ImageUrl,
                 DisplayOrder = item.DisplayOrder,
-                IsAvailable = item.IsAvailable
+                IsAvailable = item.IsAvailable,
+                IsBestSeller = item.IsBestSeller
             });
         }
 
@@ -51,7 +52,8 @@ namespace ServeSys.API.Modules.Order.Services
                 Price = item.Price,
                 ImageUrl = item.ImageUrl,
                 DisplayOrder = item.DisplayOrder,
-                IsAvailable = item.IsAvailable
+                IsAvailable = item.IsAvailable,
+                IsBestSeller = item.IsBestSeller
             });
         }
     }

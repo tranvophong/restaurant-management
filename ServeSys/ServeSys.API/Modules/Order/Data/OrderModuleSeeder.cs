@@ -42,13 +42,13 @@ namespace ServeSys.API.Modules.Order.Data
                     // Khai vị
                     new MenuItem { Name = "Gỏi cuốn tôm thịt", Price = 45000,
                         Description = "Gỏi cuốn tươi với tôm, thịt heo, bún và rau sống",
-                        MenuCategoryId = khaiVi.Id, DisplayOrder = 1 },
+                        MenuCategoryId = khaiVi.Id, DisplayOrder = 1, IsBestSeller = true },
                     new MenuItem { Name = "Chả giò chiên", Price = 55000,
                         Description = "Chả giò giòn rụm nhân thịt heo và rau củ",
                         MenuCategoryId = khaiVi.Id, DisplayOrder = 2 },
                     new MenuItem { Name = "Súp bào ngư", Price = 85000,
                         Description = "Súp bào ngư thượng hạng nấu cùng nấm đông cô",
-                        MenuCategoryId = khaiVi.Id, DisplayOrder = 3 },
+                        MenuCategoryId = khaiVi.Id, DisplayOrder = 3, IsBestSeller = true },
 
                     // Món chính
                     new MenuItem { Name = "Cơm chiên dương châu", Price = 75000,
@@ -56,13 +56,13 @@ namespace ServeSys.API.Modules.Order.Data
                         MenuCategoryId = monChinh.Id, DisplayOrder = 1 },
                     new MenuItem { Name = "Phở bò tái", Price = 65000,
                         Description = "Phở bò truyền thống với nước dùng hầm xương 12 tiếng",
-                        MenuCategoryId = monChinh.Id, DisplayOrder = 2 },
+                        MenuCategoryId = monChinh.Id, DisplayOrder = 2, IsAvailable = false },
                     new MenuItem { Name = "Bún bò Huế", Price = 70000,
                         Description = "Bún bò Huế cay nồng đậm đà hương vị miền Trung",
                         MenuCategoryId = monChinh.Id, DisplayOrder = 3 },
                     new MenuItem { Name = "Cá kho tộ", Price = 95000,
                         Description = "Cá lóc kho tộ đất với nước màu dừa và tiêu",
-                        MenuCategoryId = monChinh.Id, DisplayOrder = 4 },
+                        MenuCategoryId = monChinh.Id, DisplayOrder = 4, IsBestSeller = true },
 
                     // Tráng miệng
                     new MenuItem { Name = "Chè ba màu", Price = 30000,

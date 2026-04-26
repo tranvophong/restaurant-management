@@ -22,6 +22,8 @@ public class OrderItem
 
     /// <summary>Ghi chú riêng cho món này (vd: "Không hành", "Ít cay")</summary>
     public string? Notes { get; set; }
+    public string StaffName { get; set; } = string.Empty;
+    public string StaffId { get; set; } = string.Empty;
 
     public OrderItemStatus Status { get; set; } = OrderItemStatus.Pending;
 

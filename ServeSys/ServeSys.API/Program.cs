@@ -59,6 +59,7 @@ var app = builder.Build();
 // Seed dữ liệu khởi tạo cho các module
 await app.SeedTableModuleAsync();
 await app.SeedOrderModuleAsync();
+await app.SeedIdentityModuleAsync();
 
 app.UseExceptionHandler();
 if (app.Environment.IsDevelopment())

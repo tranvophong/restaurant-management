@@ -88,6 +88,14 @@ public class OrderDbContext : DbContext
                   .HasConversion<string>()
                   .HasMaxLength(20);
 
+            entity.Property(o => o.StaffName)
+                  .IsRequired()
+                  .HasMaxLength(100);
+
+            entity.Property(o => o.StaffId)
+                  .IsRequired()
+                  .HasMaxLength(450);
+
             entity.Property(i => i.CreatedAt)
                   .HasDefaultValueSql("GETUTCDATE()");
 
@@ -146,6 +154,8 @@ public class OrderDbContext : DbContext
             entity.Property(i => i.CreatedAt)
                   .HasDefaultValueSql("GETUTCDATE()");
 
+            entity.Property(i => i.IsBestSeller)
+                  .HasDefaultValue(false);
             // Một danh mục có nhiều món
             entity.HasOne(i => i.MenuCategory)
                   .WithMany(c => c.MenuItems)
