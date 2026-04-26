@@ -23,4 +23,10 @@ class DioClient extends ApiClient{
     final response = await dio.get(path);
     return response.data;
   }
+  
+  @override
+  Future post(String path, {Object? data}) async {
+    final response = await dio.post(path, data: data);
+    return response.data;
+  }
 }

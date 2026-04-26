@@ -8,7 +8,8 @@ class MenuItemModel {
   String? imageUrl;
   int displayOrder;
   bool isAvailable;
-
+  bool isBestSeller;
+  
   MenuItemModel({
     required this.id,
     required this.name,
@@ -17,6 +18,7 @@ class MenuItemModel {
     this.imageUrl,
     required this.displayOrder,
     required this.isAvailable,
+    required this.isBestSeller
   });
 
   factory MenuItemModel.fromJson(Map<String, dynamic> json) {
@@ -28,6 +30,7 @@ class MenuItemModel {
       imageUrl: json['imageUrl'],
       displayOrder: json['displayOrder'],
       isAvailable: _parseBool(json['isAvailable']),
+      isBestSeller: _parseBool(json['isBestSeller'])
     );
   }
 
@@ -40,6 +43,7 @@ class MenuItemModel {
       'imageUrl': imageUrl,
       'displayOrder': displayOrder,
       'isAvailable': isAvailable,
+      'isBestSeller': isBestSeller
     };
   }
 
@@ -52,6 +56,7 @@ class MenuItemModel {
       imageUrl: imageUrl,
       displayOrder: displayOrder,
       isAvailable: isAvailable,
+      isBestSeller: isBestSeller
     );
   }
 

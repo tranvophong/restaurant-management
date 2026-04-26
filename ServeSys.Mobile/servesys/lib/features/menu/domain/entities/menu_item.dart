@@ -6,6 +6,7 @@ class MenuItem {
   String? imageUrl;
   int displayOrder;
   bool isAvailable;
+  bool isBestSeller;
 
   MenuItem({
     required this.id,
@@ -14,6 +15,7 @@ class MenuItem {
     required this.price,
     this.imageUrl,
     required this.displayOrder,
-    required this.isAvailable
+    required this.isAvailable,
+    required this.isBestSeller
   });
 }

@@ -7,4 +7,6 @@ class ApiEndpoints {
 
   static const menuCategories = '/api/Menu/categories';
   static String menuItemsByCategory(int categoryId) => '/api/Menu/$categoryId';
+
+  static const placeOrder = '/api/Order/place';
 }

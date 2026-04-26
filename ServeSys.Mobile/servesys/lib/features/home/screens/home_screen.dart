@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:servesys/core/network/dio_client.dart';
 import 'package:servesys/core/utils/index.dart';
 import 'package:servesys/features/home/bloc/area_cubit.dart';
 import 'package:servesys/features/home/bloc/area_state.dart';
@@ -8,7 +9,14 @@ import 'package:servesys/features/home/bloc/table_state.dart';
 import 'package:servesys/features/home/domain/entities/table.dart' as entities;
 import 'package:servesys/features/home/domain/enums/table_status.dart';
 import 'package:servesys/features/home/extensions/table_status_extension.dart';
+import 'package:servesys/features/menu/bloc/menu_category_cubit.dart';
+import 'package:servesys/features/menu/bloc/menu_item_cubit.dart';
+import 'package:servesys/features/menu/data/repositories/menu_repository.dart';
 import 'package:servesys/features/menu/screens/menu_screen.dart';
+import 'package:servesys/features/order/bloc/order_draft_cubit.dart';
+import 'package:servesys/features/order/bloc/order_submission_cubit.dart';
+import 'package:servesys/features/order/data/repositories/order_repository.dart';
+import 'package:servesys/features/order/screens/create_order_screen.dart';
 import 'package:shimmer/shimmer.dart';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -22,12 +30,11 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedNav = 0;
 
-
   static const List<Widget> _screens = [
     _TablesTab(),
-    MenuScreen(),    
-    _OrdersTab(),  
-    _ProfileTab(),  
+    MenuScreen(),
+    _OrdersTab(),
+    _ProfileTab(),
   ];
 
   @override
@@ -35,10 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: IndexedStack(
-          index: _selectedNav,
-          children: _screens,
-        ),
+        child: IndexedStack(index: _selectedNav, children: _screens),
       ),
       bottomNavigationBar: _buildBottomNav(),
     );
@@ -70,7 +74,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () => setState(() => _selectedNav = i),
                 behavior: HitTestBehavior.opaque,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -79,7 +86,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Icon(
                           items[i].$1,
                           key: ValueKey(selected),
-                          color: selected ? AppColors.primary : AppColors.onSurfaceMuted,
+                          color: selected
+                              ? AppColors.primary
+                              : AppColors.onSurfaceMuted,
                           size: 22,
                         ),
                       ),
@@ -87,9 +96,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       Text(
                         items[i].$2,
                         style: TextStyle(
-                          color: selected ? AppColors.primary : AppColors.onSurfaceMuted,
+                          color: selected
+                              ? AppColors.primary
+                              : AppColors.onSurfaceMuted,
                           fontSize: 11,
-                          fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+                          fontWeight: selected
+                              ? FontWeight.w700
+                              : FontWeight.w400,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -147,7 +160,11 @@ class _TablesTab extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.restaurant_menu, color: AppColors.primary, size: 20),
+              const Icon(
+                Icons.restaurant_menu,
+                color: AppColors.primary,
+                size: 20,
+              ),
               const SizedBox(width: 6),
               const Text(
                 'ServeSys',
@@ -161,12 +178,17 @@ class _TablesTab extends StatelessWidget {
             ],
           ),
           Container(
-            width: 36, height: 36,
+            width: 36,
+            height: 36,
             decoration: const BoxDecoration(
               color: AppColors.secondary,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.person, color: AppColors.background, size: 20),
+            child: const Icon(
+              Icons.person,
+              color: AppColors.background,
+              size: 20,
+            ),
           ),
         ],
       ),
@@ -253,7 +275,8 @@ class _TablesTab extends StatelessWidget {
                   4,
                   (_) => Container(
                     margin: const EdgeInsets.only(right: 8),
-                    width: 80, height: 36,
+                    width: 80,
+                    height: 36,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
@@ -289,11 +312,13 @@ class _TablesTab extends StatelessWidget {
             selected: selectedIndex == -1,
             onTap: () => context.read<AreaCubit>().selectArea(-1),
           ),
-          ...areas.map((area) => _floorChip(
-            label: area.name,
-            selected: area.id == selectedIndex,
-            onTap: () => context.read<AreaCubit>().selectArea(area.id),
-          )),
+          ...areas.map(
+            (area) => _floorChip(
+              label: area.name,
+              selected: area.id == selectedIndex,
+              onTap: () => context.read<AreaCubit>().selectArea(area.id),
+            ),
+          ),
         ];
 
         return Padding(
@@ -439,7 +464,7 @@ class _TableCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isEmpty = table.status == TableStatus.available;
+    final isTableAvailable = table.status == TableStatus.available;
     final statusColor = table.status.color;
     final statusLabel = table.status.label;
 
@@ -483,11 +508,40 @@ class _TableCard extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          if (isEmpty)
+          if (isTableAvailable)
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
                 onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => MultiBlocProvider(
+                        providers: [
+                          BlocProvider(
+                            create: (_) => MenuCategoryCubit(
+                              menuRepository: MenuRepository(DioClient()),
+                            )..loadCategories(),
+                          ),
+                          BlocProvider(
+                            create: (_) => MenuItemCubit(
+                              menuRepository: MenuRepository(DioClient()),
+                            )..loadMenuItems(-1),
+                          ),
+                          BlocProvider(create: (_) => OrderDraftCubit()),
+                          BlocProvider(
+                            create: (_) => OrderSubmissionCubit(
+                              OrderRepository(DioClient()),
+                            ),
+                          ),
+                        ],
+                        child: CreateOrderScreen(
+                          tableId: table.id,
+                          tableName: table.name,
+                        ),
+                      ),
+                    ),
+                  );
                 },
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.success,

@@ -286,7 +286,7 @@ class _MenuScreenState extends State<MenuScreen> {
             ),
             itemCount: items.length,
             itemBuilder: (context, index) {
-              return _MenuCard(item: items[index], qty: 0);
+              return _MenuCard(item: items[index]);
             },
           );
         }
@@ -300,9 +300,8 @@ class _MenuScreenState extends State<MenuScreen> {
 // ─── Menu Card Widget ─────────────────────────────────────────────────────────
 class _MenuCard extends StatefulWidget {
   final MenuItem item;
-  final int qty;
 
-  const _MenuCard({required this.item, required this.qty});
+  const _MenuCard({required this.item});
 
   @override
   State<_MenuCard> createState() => _MenuCardState();
