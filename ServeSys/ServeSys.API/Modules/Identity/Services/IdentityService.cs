@@ -69,7 +69,7 @@ namespace ServeSys.API.Modules.Identity.Services
                     Succeeded = false,
                     Errors = new[]
                     {
-                        new AuthError { Code = "UserNotFound", Description = "Tài khoản không tồn tại." }
+                        new AuthError { Code = "UserOrPasswordNotCorrect", Description = "Tài khoản hoặc mật khẩu không chính xác" }
                     }
                 };
             }
@@ -82,7 +82,7 @@ namespace ServeSys.API.Modules.Identity.Services
                     Succeeded = false,
                     Errors = new[]
                     {
-                        new AuthError { Code = "PasswordMismatch", Description = "Mật khẩu không chính xác." }
+                        new AuthError { Code = "UserOrPasswordNotCorrect", Description = "Tài khoản hoặc mật khẩu không chính xác" }
                     }
                 };
             }
@@ -164,5 +164,9 @@ namespace ServeSys.API.Modules.Identity.Services
             };
         }
 
+        public async Task<int> LogoutAsync(string userId, CancellationToken cancellationToken = default)
+        {
+            return await _context.RefreshTokens.Where(rf => rf.UserId == userId).ExecuteDeleteAsync(cancellationToken);
+        }
     }
 }

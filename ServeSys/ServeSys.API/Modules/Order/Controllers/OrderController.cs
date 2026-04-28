@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ServeSys.API.Modules.Order.DTOs;
 using ServeSys.API.Modules.Order.Interfaces;
@@ -8,6 +9,7 @@ using System.Security.Claims;
 namespace ServeSys.API.Modules.Order.Controllers
 {
     [Route("api/[controller]")]
+    [Authorize]
     [ApiController]
     public class OrderController : ControllerBase
     {
@@ -24,12 +26,12 @@ namespace ServeSys.API.Modules.Order.Controllers
                 return BadRequest(ApiResponse.Fail("Order must have items"));
             try
             {
-                //var staffId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-                //var staffName = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+                var staffId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+                var staffName = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
                 var orderDto = new OrderDto
                 {
-                    StaffId = "admin-id-001",
-                    StaffName = "Admin",
+                    StaffId = staffId,
+                    StaffName = staffName,
                     TableId = orderRequest.TableId,
                     Notes = orderRequest.Notes,
                     Items = orderRequest.Items

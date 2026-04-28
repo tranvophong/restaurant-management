@@ -16,4 +16,6 @@ public interface IIdentityService
     /// Refreshes the JWT token using a refresh token
     /// </summary>
     Task<AuthResult> RefreshTokenAsync(string refreshToken);
+
+    Task<int> LogoutAsync(string userId, CancellationToken cancellationToken = default);
 }

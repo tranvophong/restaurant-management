@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ServeSys.API.Modules.Identity.DTOs;
 using ServeSys.API.Modules.Identity.Interfaces;
 using ServeSys.API.Modules.Shared.DTOs;
+using System.Security.Claims;
 
 namespace ServeSys.API.Modules.Identity.Controllers;
 
@@ -21,17 +23,17 @@ public class AuthController : ControllerBase
     /// </summary>
     [ProducesResponseType(typeof(ApiResponse<AuthResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         if (!ModelState.IsValid)
             return BadRequest(ApiResponse<object>.Fail("Dữ liệu không hợp lệ", ModelState));
-
+        request.Username = request.Username.Trim();
+        request.Password = request.Password.Trim();
         var result = await _identityService.LoginAsync(request);
 
         if (!result.Succeeded)
-            return Unauthorized(ApiResponse<object>.Fail("Đăng nhập thất bại", result.Errors));
+            return BadRequest(ApiResponse<object>.Fail("Đăng nhập thất bại", result.Errors));
 
         return Ok(ApiResponse<AuthResponse>.Ok(result.Data, "Đăng nhập thành công"));
     }
@@ -69,8 +71,20 @@ public class AuthController : ControllerBase
         var result = await _identityService.RefreshTokenAsync(request.RefreshToken);
 
         if (!result.Succeeded)
-            return BadRequest(ApiResponse<object>.Fail("Làm mới token thất bại", result.Errors));
+            return Unauthorized(ApiResponse<object>.Fail("Làm mới token thất bại", result.Errors));
 
         return Ok(ApiResponse<AuthResponse>.Ok(result.Data, "Làm mới token thành công"));
+    }
+
+    [HttpGet("logout")]
+    [Authorize]
+    public async Task<IActionResult> Logout(CancellationToken cancellationToken)
+    {
+        var userId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+        if (userId == null)
+            return Ok();
+
+        await _identityService.LogoutAsync(userId, cancellationToken);
+        return Ok(ApiResponse<object>.Ok(data: null, "Đăng xuất thành công"));
     }
 }

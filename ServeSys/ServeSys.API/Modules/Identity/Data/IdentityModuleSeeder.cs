@@ -18,6 +18,7 @@ namespace ServeSys.API.Modules.Identity.Data
             {
                 Id = "admin-id-001",
                 UserName = adminUsername,
+                NormalizedUserName = adminUsername.ToUpper(),
                 FullName = "Admin"
             };
             user.PasswordHash = new PasswordHasher<User>()
