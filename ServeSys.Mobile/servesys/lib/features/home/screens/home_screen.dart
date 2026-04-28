@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:servesys/core/di/app_dependencies.dart';
 import 'package:servesys/core/network/dio_client.dart';
 import 'package:servesys/core/utils/index.dart';
+import 'package:servesys/features/auth/bloc/auth_bloc.dart';
+import 'package:servesys/features/auth/bloc/auth_state.dart';
 import 'package:servesys/features/home/bloc/area_cubit.dart';
 import 'package:servesys/features/home/bloc/area_state.dart';
 import 'package:servesys/features/home/bloc/table_cubit.dart';
@@ -9,6 +12,7 @@ import 'package:servesys/features/home/bloc/table_state.dart';
 import 'package:servesys/features/home/domain/entities/table.dart' as entities;
 import 'package:servesys/features/home/domain/enums/table_status.dart';
 import 'package:servesys/features/home/extensions/table_status_extension.dart';
+import 'package:servesys/features/home/screens/setting_screen.dart';
 import 'package:servesys/features/menu/bloc/menu_category_cubit.dart';
 import 'package:servesys/features/menu/bloc/menu_item_cubit.dart';
 import 'package:servesys/features/menu/data/repositories/menu_repository.dart';
@@ -34,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _TablesTab(),
     MenuScreen(),
     _OrdersTab(),
-    _ProfileTab(),
+    SettingsScreen(),
   ];
 
   @override
@@ -54,7 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
       (Icons.table_restaurant, 'Tables'),
       (Icons.restaurant_menu, 'Menu'),
       (Icons.receipt_long, 'Orders'),
-      (Icons.person_outline, 'Profile'),
+      (Icons.settings, 'Setting'),
     ];
 
     return Container(
@@ -196,34 +200,46 @@ class _TablesTab extends StatelessWidget {
   }
 
   Widget _buildGreeting() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        String fullName = "";
+        if (state is AuthAuthenticated) {
+          fullName = state.data.fullName;
+        }
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  children: [
+                    if (fullName.isNotEmpty)
+                      Text(
+                        'Xin chào, $fullName',
+                        style: TextStyle(
+                          color: AppColors.onSurface,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    Text('👋', style: TextStyle(fontSize: 22)),
+                  ],
+                ),
+                SizedBox(height: 2),
                 Text(
-                  'Xin chào, Alex ',
+                  'Hôm nay bạn có 12 bàn cần phục vụ.',
                   style: TextStyle(
-                    color: AppColors.onSurface,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
+                    color: AppColors.onSurfaceMuted,
+                    fontSize: 13,
                   ),
                 ),
-                Text('👋', style: TextStyle(fontSize: 22)),
               ],
             ),
-            SizedBox(height: 2),
-            Text(
-              'Hôm nay bạn có 12 bàn cần phục vụ.',
-              style: TextStyle(color: AppColors.onSurfaceMuted, fontSize: 13),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -425,37 +441,6 @@ class _OrdersTab extends StatelessWidget {
   }
 }
 
-// ─── Tab 3: Profile ───────────────────────────────────────────────────────────
-class _ProfileTab extends StatelessWidget {
-  const _ProfileTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.person_outline, color: AppColors.primary, size: 48),
-          SizedBox(height: 12),
-          Text(
-            'Profile',
-            style: TextStyle(
-              color: AppColors.onSurface,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          SizedBox(height: 4),
-          Text(
-            'Thông tin tài khoản',
-            style: TextStyle(color: AppColors.onSurfaceMuted, fontSize: 13),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ─── Table Card ───────────────────────────────────────────────────────────────
 class _TableCard extends StatelessWidget {
   final entities.Table table;
@@ -520,18 +505,24 @@ class _TableCard extends StatelessWidget {
                         providers: [
                           BlocProvider(
                             create: (_) => MenuCategoryCubit(
-                              menuRepository: MenuRepository(DioClient()),
+                              menuRepository: MenuRepository(
+                                DioClient(AppDependencies.instance.authStorage),
+                              ),
                             )..loadCategories(),
                           ),
                           BlocProvider(
                             create: (_) => MenuItemCubit(
-                              menuRepository: MenuRepository(DioClient()),
+                              menuRepository: MenuRepository(
+                                DioClient(AppDependencies.instance.authStorage),
+                              ),
                             )..loadMenuItems(-1),
                           ),
                           BlocProvider(create: (_) => OrderDraftCubit()),
                           BlocProvider(
                             create: (_) => OrderSubmissionCubit(
-                              OrderRepository(DioClient()),
+                              OrderRepository(
+                                DioClient(AppDependencies.instance.authStorage),
+                              ),
                             ),
                           ),
                         ],

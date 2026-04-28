@@ -1,9 +1,5 @@
-import 'package:dio/dio.dart';
 import 'package:servesys/core/base/base_repository.dart';
-import 'package:servesys/core/error/dio_error_mapper.dart';
-import 'package:servesys/core/network/api_client.dart';
 import 'package:servesys/core/network/api_endpoints.dart';
-import 'package:servesys/core/network/api_response.dart';
 import 'package:servesys/features/home/data/models/area_model.dart';
 import 'package:servesys/features/home/domain/entities/area.dart';
 
