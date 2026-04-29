@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
 using ServeSys.API.Modules.Table.Data;
 using ServeSys.API.Modules.Table.Entities;
 using ServeSys.API.Modules.Table.Interfaces.Repositories;
@@ -12,6 +13,18 @@ namespace ServeSys.API.Modules.Table.Repositories
         public TableRepository(TableDbContext context)
         {
             _context = context;
+        }
+
+        public async Task<bool> UpdateAsync(
+        Expression<Func<DiningTable, bool>> predicate,
+        Expression<Func<SetPropertyCalls<DiningTable>, SetPropertyCalls<DiningTable>>> setPropertyCalls,
+        CancellationToken cancellationToken = default)
+        {
+            var affected = await _context.DiningTables
+                .Where(predicate)
+                .ExecuteUpdateAsync(setPropertyCalls, cancellationToken);
+
+            return affected > 0;
         }
 
         public async Task<IEnumerable<DiningTable>> FindAsync(Expression<Func<DiningTable, bool>>? predicate,

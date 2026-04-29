@@ -1,6 +1,7 @@
 import 'package:servesys/core/network/api_client.dart';
 import 'package:servesys/core/network/dio_client.dart';
 import 'package:servesys/core/services/auth_storage_service.dart';
+import 'package:servesys/core/services/in_memory_auth_storage.dart';
 import 'package:servesys/core/services/shared_prefs_auth_storage.dart';
 
 /// Composition root — holds every application-wide singleton.
@@ -33,8 +34,8 @@ class AppDependencies {
   static Future<void> init() async {
     final deps = AppDependencies._();
 
-    deps.authStorage = SharedPrefsAuthStorage();
-    // deps.authStorage = InMemoryAuthStorage(); // flip for no-persistence
+    // deps.authStorage = SharedPrefsAuthStorage();
+    deps.authStorage = InMemoryAuthStorage();
 
     deps.dioClient = DioClient(deps.authStorage);
 

@@ -14,6 +14,27 @@ namespace ServeSys.API.Modules.Table.Services
             _tableRepository = tableRepository;
         }
 
+        public async Task<TableDto?> GetByIdAsync(int tableId, CancellationToken cancellationToken = default)
+        {
+            var table = await _tableRepository.FindAsync(t => t.Id == tableId, cancellationToken);
+            return table != null && table.Any() ? new TableDto
+            {
+                Id = table.First().Id,
+                Name = table.First().Name,
+                Seats = table.First().Capacity,
+                Status = table.First().Status
+            } : null;
+        }
+
+        public async Task<bool> OccupyTableAsync(int tableId, CancellationToken cancellationToken = default)
+        {
+            var hasAffected = await _tableRepository.UpdateAsync(t => t.Id == tableId && t.Status == TableStatus.Available,
+                s => s.SetProperty(t => t.Status, TableStatus.Occupied)
+                      .SetProperty(t => t.UpdatedAt, DateTime.UtcNow)
+                , cancellationToken); 
+            return hasAffected;
+        }
+
         public async Task<IEnumerable<TableDto>> GetTablesAsync(CancellationToken ctk = default)
         {
             var tables = await _tableRepository.FindAsync(cancellationToken: ctk);

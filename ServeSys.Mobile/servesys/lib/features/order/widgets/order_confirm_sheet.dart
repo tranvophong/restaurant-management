@@ -27,7 +27,7 @@ class OrderConfirmSheet extends StatelessWidget {
         if (submissionState is OrderSubmissionSuccess) {
           final messenger = ScaffoldMessenger.of(context);
           Navigator.pop(context); // Close the confirm sheet
-          Navigator.pop(context); // Go back to Home Screen
+          Navigator.maybePop(context); // Go back to Home Screen
           messenger.showSnackBar(
             SnackBar(
               content: Text('${tableName.toUpperCase()} Đặt món thành công!'),

@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using ServeSys.API.Modules.Order.DTOs;
 using ServeSys.API.Modules.Order.Interfaces;
 using ServeSys.API.Modules.Shared.DTOs;
+using ServeSys.API.Modules.Shared.Exceptions;
 using System.Security.Claims;
 
 namespace ServeSys.API.Modules.Order.Controllers
@@ -39,9 +41,21 @@ namespace ServeSys.API.Modules.Order.Controllers
                 var order = await _orderService.PlaceOrderAsync(orderDto, cancellationToken);
                 return Ok(ApiResponse<OrderResponse>.Ok(order));
             }
-            catch (Exception ex)
+            catch (BadRequestException ex)
             {
                 return BadRequest(ApiResponse.Fail(ex.Message));
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(ApiResponse.Fail(ex.Message));
+            }
+            catch (ConflictException ex)
+            {
+                return Conflict(ApiResponse.Fail(ex.Message));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ApiResponse.Fail("Internal server error"));
             }
         }
     }

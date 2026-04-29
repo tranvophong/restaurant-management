@@ -19,8 +19,9 @@ import 'package:servesys/features/menu/data/repositories/menu_repository.dart';
 import 'package:servesys/features/menu/screens/menu_screen.dart';
 import 'package:servesys/features/order/bloc/order_draft_cubit.dart';
 import 'package:servesys/features/order/bloc/order_submission_cubit.dart';
-import 'package:servesys/features/order/data/repositories/order_repository.dart';
+import 'package:servesys/features/order/bloc/order_submission_state.dart';
 import 'package:servesys/features/order/screens/create_order_screen.dart';
+import 'package:servesys/features/order/screens/order_detail_screen.dart';
 import 'package:shimmer/shimmer.dart';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -138,20 +139,30 @@ class _TablesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AreaCubit, AreaState>(
+    return BlocListener<OrderSubmissionCubit, OrderSubmissionState>(
       listener: (context, state) {
-        if (state is AreaSuccess) {
-          context.read<TableCubit>().loadTables(state.selectedIndex);
+        if (state is OrderSubmissionSuccess) {
+          context.read<TableCubit>().updateTableStatus(
+            state.tableId,
+            TableStatus.occupied,
+          );
         }
       },
-      child: Column(
-        children: [
-          _buildTopBar(),
-          _buildGreeting(),
-          _buildSummaryBadges(context),
-          _buildFloorTabs(context),
-          Expanded(child: _buildGrid()),
-        ],
+      child: BlocListener<AreaCubit, AreaState>(
+        listener: (context, state) {
+          if (state is AreaSuccess) {
+            context.read<TableCubit>().loadTables(state.selectedIndex);
+          }
+        },
+        child: Column(
+          children: [
+            _buildTopBar(),
+            _buildGreeting(),
+            _buildSummaryBadges(context),
+            _buildFloorTabs(context),
+            Expanded(child: _buildGrid()),
+          ],
+        ),
       ),
     );
   }
@@ -453,103 +464,103 @@ class _TableCard extends StatelessWidget {
     final statusColor = table.status.color;
     final statusLabel = table.status.label;
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: statusColor.withOpacity(0.35), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: statusColor.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                table.id.toString(),
-                style: const TextStyle(
-                  color: AppColors.onSurface,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                ),
-              ),
-              _StatusBadge(label: statusLabel, color: statusColor),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${table.chairs} GHẾ',
-            style: const TextStyle(
-              color: AppColors.onSurfaceMuted,
-              fontSize: 11,
-            ),
-          ),
-          const Spacer(),
-          if (isTableAvailable)
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => MultiBlocProvider(
-                        providers: [
-                          BlocProvider(
-                            create: (_) => MenuCategoryCubit(
-                              menuRepository: MenuRepository(
-                                DioClient(AppDependencies.instance.authStorage),
-                              ),
-                            )..loadCategories(),
-                          ),
-                          BlocProvider(
-                            create: (_) => MenuItemCubit(
-                              menuRepository: MenuRepository(
-                                DioClient(AppDependencies.instance.authStorage),
-                              ),
-                            )..loadMenuItems(-1),
-                          ),
-                          BlocProvider(create: (_) => OrderDraftCubit()),
-                          BlocProvider(
-                            create: (_) => OrderSubmissionCubit(
-                              OrderRepository(
-                                DioClient(AppDependencies.instance.authStorage),
-                              ),
-                            ),
-                          ),
-                        ],
-                        child: CreateOrderScreen(
-                          tableId: table.id,
-                          tableName: table.name,
-                        ),
-                      ),
+    void handleTap(BuildContext context) async {
+      final isAvailable = table.status == TableStatus.available;
+
+      if (isAvailable) {
+        // ── Không có khách → Mở bàn
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MultiBlocProvider(
+              providers: [
+                BlocProvider(
+                  create: (_) => MenuCategoryCubit(
+                    menuRepository: MenuRepository(
+                      DioClient(AppDependencies.instance.authStorage),
                     ),
-                  );
-                },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.success,
-                  side: const BorderSide(color: AppColors.success),
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  textStyle: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  )..loadCategories(),
                 ),
-                child: const Text('Mở bàn'),
+                BlocProvider(
+                  create: (_) => MenuItemCubit(
+                    menuRepository: MenuRepository(
+                      DioClient(AppDependencies.instance.authStorage),
+                    ),
+                  )..loadMenuItems(-1),
+                ),
+                BlocProvider(create: (_) => OrderDraftCubit()),
+                BlocProvider.value(
+                  value: context.read<OrderSubmissionCubit>(),
+                ),
+              ],
+              child: CreateOrderScreen(
+                tableId: table.id,
+                tableName: table.name,
               ),
             ),
-        ],
+          ),
+        );
+      } else {
+        // ── Có khách → Xem Order Detail
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => OrderDetailsScreen()),
+        );
+      }
+    }
+
+    return GestureDetector(
+      onTap: () => handleTap(context),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: statusColor.withOpacity(0.35), width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: statusColor.withOpacity(0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  table.id.toString(),
+                  style: const TextStyle(
+                    color: AppColors.onSurface,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
+                _StatusBadge(label: statusLabel, color: statusColor),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${table.chairs} GHẾ',
+              style: const TextStyle(
+                color: AppColors.onSurfaceMuted,
+                fontSize: 11,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              isTableAvailable ? 'Nhấn để mở bàn' : 'Nhấn để xem order',
+              style: TextStyle(
+                color: statusColor.withOpacity(0.8),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

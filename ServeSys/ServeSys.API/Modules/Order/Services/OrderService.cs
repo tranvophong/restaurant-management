@@ -1,7 +1,12 @@
-﻿using ServeSys.API.Modules.Order.DTOs;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using ServeSys.API.Modules.Order.Data;
+using ServeSys.API.Modules.Order.DTOs;
 using ServeSys.API.Modules.Order.Entities;
 using ServeSys.API.Modules.Order.Interfaces;
 using ServeSys.API.Modules.Order.Interfaces.Repositories;
+using ServeSys.API.Modules.Shared.Exceptions;
+using ServeSys.API.Modules.Table.Interfaces;
 using System.Runtime.ConstrainedExecution;
 
 namespace ServeSys.API.Modules.Order.Services
@@ -10,42 +15,94 @@ namespace ServeSys.API.Modules.Order.Services
     {
         private readonly IOrderRepository _orderRepository;
         private readonly IMenuRepository _menuRepository;
-        public OrderService(IOrderRepository orderRepository, IMenuRepository menuRepository)
+        private readonly ITableService _tableService;
+        private readonly OrderDbContext _orderContext;
+        public OrderService(IOrderRepository orderRepository, IMenuRepository menuRepository, ITableService tableService, OrderDbContext orderContext)
         {
             _orderRepository = orderRepository;
             _menuRepository = menuRepository;
+            _tableService = tableService;
+            _orderContext = orderContext;
         }
+
+        //public async Task<OrderDto> GetOrderDetailByTable(int tableId)
+        //{
+
+        //}
 
         public async Task<OrderResponse> PlaceOrderAsync(OrderDto orderDto, CancellationToken cancellationToken = default)
         {
-            
-            Validate(orderDto);
 
-            // Lấy MenuItem từ database dựa vào danh sách MenuItemId trong orderDto
-            // Sau đó chuyển thành dictionary để lookup
-            var menuDict = await GetMenuDictionaryAsync(orderDto, cancellationToken);
+            ValidateModel(orderDto);
 
-            // Map Items từ DTO sang Entity, và gán giá lấy từ menuDict đã query db
-            var orderItems = BuildOrderItems(orderDto, menuDict);
+            using var transaction = await _orderContext.Database.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                var tableOrder = await _tableService.GetByIdAsync(orderDto.TableId);
+                if (tableOrder == null)
+                    throw new NotFoundException("Table not found");
 
-            var existingOrder = await _orderRepository.GetActiveOrderByTableIdAsync(orderDto.TableId);
+                if (!tableOrder.IsAvailable)
+                    throw new ConflictException("Table is not available");
 
-            var order = BuildOrder(orderDto, orderItems);
+                var existingOrder = await _orderRepository.GetActiveOrderByTableIdAsync(orderDto.TableId, cancellationToken);
+                await EnsureTableReadyForOrderAsync(tableOrder.Id, existingOrder, cancellationToken);
 
-            var savedOrder = existingOrder == null
-            ? await _orderRepository.CreateOrderAsync(order, cancellationToken)
-            : await _orderRepository.AppendOrderAsync(existingOrder, order, cancellationToken);
+                // Lấy MenuItem từ database dựa vào danh sách MenuItemId trong orderDto
+                // Sau đó chuyển thành dictionary để lookup
+                var menuDict = await GetMenuDictionaryAsync(orderDto, cancellationToken);
 
-            return MapToResponse(savedOrder);
+                // Map Items từ DTO sang Entity, và gán giá lấy từ menuDict đã query db
+                var orderItems = BuildOrderItems(orderDto, menuDict);
+
+                var order = BuildOrder(orderDto, orderItems);
+                
+                var savedOrder = existingOrder == null
+                ? await _orderRepository.CreateOrderAsync(order, cancellationToken)
+                : await _orderRepository.AppendOrderAsync(existingOrder, order, cancellationToken);
+
+                await transaction.CommitAsync(cancellationToken);
+                return MapToResponse(savedOrder);
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
         }
 
-        private void Validate(OrderDto dto)
+        private async Task EnsureTableReadyForOrderAsync(
+            int tableId,
+            Entities.Order? existingOrder,
+            CancellationToken cancellationToken)
+        {
+            // bàn chưa có order → phải đổi trạng thái bàn
+            if (existingOrder == null)
+            {
+                var isOccupied = await _tableService
+                    .OccupyTableAsync(tableId, cancellationToken);
+
+                if (!isOccupied)
+                    throw new ConflictException("Table is not available");
+
+                return;
+            }
+
+            // đã có order → phải còn active
+            if (existingOrder.Status == OrderStatus.Completed ||
+                existingOrder.Status == OrderStatus.Cancelled)
+            {
+                throw new ConflictException("Cannot append to a closed order");
+            }
+        }
+
+        private void ValidateModel(OrderDto dto)
         {
             if (!dto.Items.Any())
-                throw new Exception("Order must have items");
+                throw new BadRequestException("Order must have items");
 
             if (dto.Items.Any(i => i.Quantity <= 0))
-                throw new Exception("Quantity must be > 0");
+                throw new BadRequestException("Quantity must be > 0");
         }
 
         private async Task<Dictionary<int, MenuItem>> GetMenuDictionaryAsync(
@@ -74,6 +131,7 @@ namespace ServeSys.API.Modules.Order.Services
                 DiningTableId = dto.TableId,
                 Notes = dto.Notes,
                 OrderItems = items,
+                Status = OrderStatus.Pending
             };
 
             order.TotalAmount = items.Sum(i => i.Quantity * i.UnitPrice);

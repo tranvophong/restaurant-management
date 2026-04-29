@@ -14,4 +14,20 @@ class Table {
     required this.chairs,
     required this.isAvailable,
   });
+
+   Table copyWith({
+    int? id,
+    String? name,
+    TableStatus? status,
+    int? chairs,
+    bool? isAvailable,
+  }) {
+    return Table(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      status: status ?? this.status,
+      chairs: chairs ?? this.chairs,
+      isAvailable: isAvailable ?? this.isAvailable,
+    );
+  }
 }

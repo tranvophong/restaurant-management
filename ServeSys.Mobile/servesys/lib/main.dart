@@ -17,6 +17,8 @@ import 'package:servesys/features/home/screens/home_screen.dart';
 import 'package:servesys/features/menu/bloc/menu_category_cubit.dart';
 import 'package:servesys/features/menu/bloc/menu_item_cubit.dart';
 import 'package:servesys/features/menu/data/repositories/menu_repository.dart';
+import 'package:servesys/features/order/bloc/order_submission_cubit.dart';
+import 'package:servesys/features/order/data/repositories/order_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -89,6 +91,12 @@ class ServeSysApp extends StatelessWidget {
             create: (_) =>
                 MenuItemCubit(menuRepository: MenuRepository(deps.dioClient))
                   ..loadMenuItems(-1),
+          ),
+          // Order
+          BlocProvider(
+            create: (_) => OrderSubmissionCubit(
+              OrderRepository(deps.dioClient),
+            ),
           ),
         ],
         child: const _AuthGate(),

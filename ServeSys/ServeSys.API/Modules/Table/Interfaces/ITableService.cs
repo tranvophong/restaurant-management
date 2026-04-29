@@ -7,5 +7,7 @@ namespace ServeSys.API.Modules.Table.Interfaces
     {
         Task<IEnumerable<TableDto>> GetTablesByAreaAsync(int areaId, CancellationToken ctk = default);
         Task<IEnumerable<TableDto>> GetTablesAsync(CancellationToken ctk = default);
+        Task<bool> OccupyTableAsync(int tableId, CancellationToken cancellationToken = default);
+        Task<TableDto?> GetByIdAsync(int tableId, CancellationToken cancellationToken = default);
     }
 }

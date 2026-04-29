@@ -54,6 +54,10 @@ namespace ServeSys.API.Modules.Order.Repositories
         public async Task<Entities.Order> CreateOrderAsync(Entities.Order order, CancellationToken cancellationToken = default)
         {
             order.CreatedAt = DateTime.UtcNow;
+            if(order.Status == OrderStatus.Cancelled || order.Status == OrderStatus.Completed)
+            {
+                throw new InvalidOperationException("Cannot create order with Cancelled or Completed status.");
+            }
             var orderEntity = await _context.Orders.AddAsync(order, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
             return orderEntity.Entity;

@@ -4,14 +4,14 @@ import 'package:servesys/core/network/api_endpoints.dart';
 class OrderRepository extends BaseRepository {
   OrderRepository(super.apiClient);
 
-  Future<void> placeOrder(int tableId, String notes, List<Map<String, dynamic>> items) {
-    return handle<void>(
+  Future<int> placeOrder(int tableId, String notes, List<Map<String, dynamic>> items) {
+    return handle(
       (api) => api.post(ApiEndpoints.placeOrder, data: {
         'tableId': tableId,
         'notes': notes,
         'items': items,
       }),
-      (json) => null,
+      (json) => json['tableId'] as int,
     );
   }
 }
