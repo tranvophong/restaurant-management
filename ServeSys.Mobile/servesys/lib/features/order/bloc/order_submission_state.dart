@@ -6,7 +6,8 @@ class OrderSubmissionLoading extends OrderSubmissionState {}
 
 class OrderSubmissionSuccess extends OrderSubmissionState {
   int tableId;
-  OrderSubmissionSuccess(this.tableId);
+  String orderCode;
+  OrderSubmissionSuccess(this.tableId, this.orderCode);
 }
 
 class OrderSubmissionError extends OrderSubmissionState {

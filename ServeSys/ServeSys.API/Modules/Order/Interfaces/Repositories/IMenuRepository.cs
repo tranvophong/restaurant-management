@@ -7,7 +7,10 @@ namespace ServeSys.API.Modules.Order.Interfaces.Repositories
     {
         Task<IEnumerable<MenuCategory>> FindCategoriesAsync(Expression<Func<MenuCategory, bool>>? predicate = null,
             CancellationToken cancellationToken = default);
-        Task<IEnumerable<MenuItem>> FindAsync(Expression<Func<MenuItem, bool>>? predicate = null, 
+        Task<IEnumerable<MenuItem>> FindAllAsync(Expression<Func<MenuItem, bool>>? predicate = null, 
+            CancellationToken cancellationToken = default);
+
+        Task<MenuItem?> FindAsync(Expression<Func<MenuItem, bool>>? predicate = null,
             CancellationToken cancellationToken = default);
     }
 }

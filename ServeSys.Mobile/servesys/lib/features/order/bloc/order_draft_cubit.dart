@@ -3,7 +3,10 @@ import 'package:servesys/features/menu/domain/entities/menu_item.dart';
 import 'package:servesys/features/order/data/models/order_item_entry.dart';
 
 class OrderDraftCubit extends Cubit<List<OrderItemEntry>> {
-  OrderDraftCubit() : super([]);
+  final int tableId;
+  final String tableName;
+
+  OrderDraftCubit({required this.tableId, required this.tableName}) : super([]);
 
   void increment(MenuItem item) {
     final current = List<OrderItemEntry>.from(state);

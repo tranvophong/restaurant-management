@@ -17,4 +17,5 @@ class ApiEndpoints {
 
   // Order
   static const placeOrder = '/api/Order/place';
+  static String orderDetail(int tableId) => '/api/Order/$tableId';
 }

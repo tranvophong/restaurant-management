@@ -17,12 +17,12 @@ namespace ServeSys.API.Modules.Table.Services
         public async Task<TableDto?> GetByIdAsync(int tableId, CancellationToken cancellationToken = default)
         {
             var table = await _tableRepository.FindAsync(t => t.Id == tableId, cancellationToken);
-            return table != null && table.Any() ? new TableDto
+            return table != null ? new TableDto
             {
-                Id = table.First().Id,
-                Name = table.First().Name,
-                Seats = table.First().Capacity,
-                Status = table.First().Status
+                Id = table.Id,
+                Name = table.Name,
+                Seats = table.Capacity,
+                Status = table.Status
             } : null;
         }
 
@@ -37,7 +37,7 @@ namespace ServeSys.API.Modules.Table.Services
 
         public async Task<IEnumerable<TableDto>> GetTablesAsync(CancellationToken ctk = default)
         {
-            var tables = await _tableRepository.FindAsync(cancellationToken: ctk);
+            var tables = await _tableRepository.FindAllAsync(cancellationToken: ctk);
             return tables.Select(t => new TableDto
             {
                 Id = t.Id,
@@ -49,7 +49,7 @@ namespace ServeSys.API.Modules.Table.Services
 
         public async Task<IEnumerable<TableDto>> GetTablesByAreaAsync(int areaId, CancellationToken ctk = default)
         {
-            var tables = await _tableRepository.FindAsync(t => t.AreaId == areaId, ctk);
+            var tables = await _tableRepository.FindAllAsync(t => t.AreaId == areaId, ctk);
             return tables.Select(t => new TableDto
             {
                 Id = t.Id,

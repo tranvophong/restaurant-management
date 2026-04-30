@@ -10,8 +10,8 @@ class OrderSubmissionCubit extends Cubit<OrderSubmissionState> {
   Future<void> submitOrder(int tableId, String notes, List<Map<String, dynamic>> items) async {
     emit(OrderSubmissionLoading());
     try {
-    final returnedTableId = await orderRepository.placeOrder(tableId, notes, items);
-      emit(OrderSubmissionSuccess(returnedTableId));
+    final returnedOrder = await orderRepository.placeOrder(tableId, notes, items);
+      emit(OrderSubmissionSuccess(returnedOrder.$1, returnedOrder.$2));
     } catch (e) {
       emit(OrderSubmissionError(e.toString()));
     }

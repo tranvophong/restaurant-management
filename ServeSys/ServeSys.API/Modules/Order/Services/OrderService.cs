@@ -25,10 +25,39 @@ namespace ServeSys.API.Modules.Order.Services
             _orderContext = orderContext;
         }
 
-        //public async Task<OrderDto> GetOrderDetailByTable(int tableId)
-        //{
+        public async Task<OrderDetailDto> GetOrderByTableAsync(int tableId, CancellationToken cancellationToken = default)
+        {
+            var order = await _orderRepository.FindAsync(o => o.DiningTableId == tableId 
+            && o.Status != OrderStatus.Completed 
+            && o.Status != OrderStatus.Cancelled, 
+            orderBy: o => o.OrderByDescending(or => or.CreatedAt),
+            include: o => o.Include(or => or.OrderItems).ThenInclude(oi => oi.MenuItem),
+            cancellationToken: cancellationToken);
+            if (order == null) throw new NotFoundException("Order not found");
 
-        //}
+            return new OrderDetailDto
+            {
+                OrderCode = order.OrderCode,
+                TableId = order.DiningTableId,
+                Notes = order.Notes ?? string.Empty,
+                TotalPrice = order.TotalAmount,
+                Items = order.OrderItems.Select(i => new OrderItemDetailDto
+                {
+                    MenuItemId = i.MenuItemId,
+                    Description = i.MenuItem.Description ?? "",
+                    ImageUrl = i.MenuItem.ImageUrl ?? "",
+                    Title = i.MenuItem.Name,
+                    Quantity = i.Quantity,
+                    Price = i.UnitPrice,
+                    OrderAt = i.CreatedAt,
+                    Status = i.Status,
+                    StaffName = i.StaffName,
+                    Notes = i.Notes ?? string.Empty,
+                    
+                }).ToList(),
+                CreatedAt = order.CreatedAt
+            };
+        }
 
         public async Task<OrderResponse> PlaceOrderAsync(OrderDto orderDto, CancellationToken cancellationToken = default)
         {
@@ -112,7 +141,7 @@ namespace ServeSys.API.Modules.Order.Services
             var ids = dto.Items.Select(i => i.MenuItemId).ToList();
 
             var menuItems = (await _menuRepository
-                .FindAsync(m => ids.Contains(m.Id), cancellationToken))
+                .FindAllAsync(m => ids.Contains(m.Id), cancellationToken))
                 .ToList();
 
             if (menuItems.Count != ids.Count)

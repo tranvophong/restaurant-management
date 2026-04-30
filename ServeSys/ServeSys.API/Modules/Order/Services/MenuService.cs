@@ -27,7 +27,7 @@ namespace ServeSys.API.Modules.Order.Services
 
         public async Task<IEnumerable<MenuItemDto>> GetMenuItemsAsync(CancellationToken cancellationToken = default)
         {
-            var menuItems = await _menuRepository.FindAsync(cancellationToken: default);
+            var menuItems = await _menuRepository.FindAllAsync(cancellationToken: default);
             return menuItems.Select(item => new MenuItemDto
             {
                 Id = item.Id,
@@ -43,7 +43,7 @@ namespace ServeSys.API.Modules.Order.Services
 
         public async Task<IEnumerable<MenuItemDto>> GetMenuItemsByCategoryAsync(int categoryId, CancellationToken cancellationToken = default)
         {
-            var menuItems = await _menuRepository.FindAsync(item => item.MenuCategoryId == categoryId, cancellationToken);
+            var menuItems = await _menuRepository.FindAllAsync(item => item.MenuCategoryId == categoryId, cancellationToken);
             return menuItems.Select(item => new MenuItemDto
             {
                 Id = item.Id,

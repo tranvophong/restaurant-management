@@ -27,7 +27,7 @@ namespace ServeSys.API.Modules.Table.Repositories
             return affected > 0;
         }
 
-        public async Task<IEnumerable<DiningTable>> FindAsync(Expression<Func<DiningTable, bool>>? predicate,
+        public async Task<IEnumerable<DiningTable>> FindAllAsync(Expression<Func<DiningTable, bool>>? predicate,
             CancellationToken cancellationToken)
         {
             if(predicate == null)
@@ -35,6 +35,17 @@ namespace ServeSys.API.Modules.Table.Repositories
                 predicate = t => true;
             }
             var tables = await _context.DiningTables.Where(predicate).ToListAsync(cancellationToken);
+            return tables;
+        }
+
+        public async Task<DiningTable?> FindAsync(Expression<Func<DiningTable, bool>>? predicate,
+          CancellationToken cancellationToken)
+        {
+            if (predicate == null)
+            {
+                predicate = t => true;
+            }
+            var tables = await _context.DiningTables.Where(predicate).FirstOrDefaultAsync(cancellationToken);
             return tables;
         }
     }

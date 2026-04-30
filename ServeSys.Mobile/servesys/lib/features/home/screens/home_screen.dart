@@ -488,15 +488,12 @@ class _TableCard extends StatelessWidget {
                     ),
                   )..loadMenuItems(-1),
                 ),
-                BlocProvider(create: (_) => OrderDraftCubit()),
+                BlocProvider(create: (_) => OrderDraftCubit(tableId: table.id, tableName: table.name)),
                 BlocProvider.value(
                   value: context.read<OrderSubmissionCubit>(),
                 ),
               ],
-              child: CreateOrderScreen(
-                tableId: table.id,
-                tableName: table.name,
-              ),
+              child: const CreateOrderScreen(),
             ),
           ),
         );
@@ -504,7 +501,7 @@ class _TableCard extends StatelessWidget {
         // ── Có khách → Xem Order Detail
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => OrderDetailsScreen()),
+          MaterialPageRoute(builder: (_) => OrderDetailsScreen(tableId: table.id, tableName: table.name,)),
         );
       }
     }

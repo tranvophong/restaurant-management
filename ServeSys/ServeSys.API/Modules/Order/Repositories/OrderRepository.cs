@@ -2,6 +2,7 @@
 using ServeSys.API.Modules.Order.Data;
 using ServeSys.API.Modules.Order.Entities;
 using ServeSys.API.Modules.Order.Interfaces.Repositories;
+using System.Linq.Expressions;
 
 namespace ServeSys.API.Modules.Order.Repositories
 {
@@ -13,6 +14,25 @@ namespace ServeSys.API.Modules.Order.Repositories
             _context = context;
         }
 
+        public async Task<Entities.Order?> FindAsync(Expression<Func<Entities.Order, bool>> predicate,
+            Func<IQueryable<Entities.Order>, IOrderedQueryable<Entities.Order>>? orderBy = null,
+            Func<IQueryable<Entities.Order>, IQueryable<Entities.Order>>? include = null,
+            CancellationToken cancellationToken = default)
+        {
+            var query = _context.Orders.AsNoTracking();
+
+            if (include != null)
+            {
+                query = include(query);
+            }
+
+            if (orderBy != null)
+            {
+                query = orderBy(query);
+            }
+
+            return await query.FirstOrDefaultAsync(predicate, cancellationToken);
+        }
         public async Task<Entities.Order> AppendOrderAsync(Entities.Order existingOrder, Entities.Order incomingOrder, CancellationToken cancellationToken = default)
         {
             await _context.Entry(existingOrder)
@@ -54,7 +74,7 @@ namespace ServeSys.API.Modules.Order.Repositories
         public async Task<Entities.Order> CreateOrderAsync(Entities.Order order, CancellationToken cancellationToken = default)
         {
             order.CreatedAt = DateTime.UtcNow;
-            if(order.Status == OrderStatus.Cancelled || order.Status == OrderStatus.Completed)
+            if (order.Status == OrderStatus.Cancelled || order.Status == OrderStatus.Completed)
             {
                 throw new InvalidOperationException("Cannot create order with Cancelled or Completed status.");
             }

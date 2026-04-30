@@ -1,104 +1,139 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:servesys/core/di/app_dependencies.dart';
 import 'package:servesys/core/utils/appcolor_util.dart';
-
-enum OrderStatus { preparing, served, pending }
-
-class OrderItem {
-  final String name;
-  final OrderStatus status;
-  final double price;
-  final String note;
-  final int quantity;
-  final String orderedBy;
-
-  const OrderItem({
-    required this.name,
-    required this.status,
-    required this.price,
-    required this.note,
-    required this.quantity,
-    required this.orderedBy,
-  });
-}
-
-// ─── Main Screen ────────────────────────────────────────────────────────────
+import 'package:servesys/features/order/bloc/order_detail_cubit.dart';
+import 'package:servesys/features/order/bloc/order_detail_state.dart';
+import 'package:servesys/features/order/domain/entities/order_detail.dart';
+import 'package:servesys/features/order/domain/enums/order_item_status.dart';
+import 'package:servesys/features/order/data/repositories/order_repository.dart';
+import 'package:servesys/features/order/screens/create_order_screen.dart';
+import 'package:servesys/features/menu/bloc/menu_category_cubit.dart';
+import 'package:servesys/features/menu/bloc/menu_item_cubit.dart';
+import 'package:servesys/features/menu/data/repositories/menu_repository.dart';
+import 'package:servesys/features/order/bloc/order_draft_cubit.dart';
+import 'package:servesys/features/order/bloc/order_submission_cubit.dart';
 
 class OrderDetailsScreen extends StatelessWidget {
-  const OrderDetailsScreen({super.key});
-
-  static const List<OrderItem> _items = [
-    OrderItem(
-      name: 'Wagyu Ribeye',
-      status: OrderStatus.preparing,
-      price: 85.00,
-      note: 'Medium Rare. No salt on frites.',
-      quantity: 1,
-      orderedBy: 'Alex M.',
-    ),
-    OrderItem(
-      name: 'Heirloom Tomato Salad',
-      status: OrderStatus.served,
-      price: 18.00,
-      note: 'Dressing on side.',
-      quantity: 1,
-      orderedBy: 'Alex M.',
-    ),
-    OrderItem(
-      name: 'Dark Chocolate Tart',
-      status: OrderStatus.pending,
-      price: 24.00,
-      note: 'Hold until mains cleared.',
-      quantity: 2,
-      orderedBy: 'Sarah K.',
-    ),
-  ];
-
-  static const double _subtotal = 127.00;
-  static const double _taxRate = 0.085;
-  static const double _tax = _subtotal * _taxRate;
-  static const double _total = _subtotal + _tax;
+  final int tableId;
+  final String tableName;
+  const OrderDetailsScreen({
+    super.key,
+    required this.tableId,
+    required this.tableName,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          const _AppBar(),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return BlocProvider(
+      create: (context) =>
+          OrderDetailCubit(OrderRepository(AppDependencies.instance.dioClient))
+            ..getOrderDetail(tableId),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: BlocBuilder<OrderDetailCubit, OrderDetailState>(
+          builder: (context, state) {
+            if (state is OrderDetailLoading || state is OrderDetailInitial) {
+              return const Column(
                 children: [
-                  const SizedBox(height: 20),
-                  const _OrderHeader(),
-                  const SizedBox(height: 20),
-                  ..._items.map(
-                    (item) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _OrderItemCard(item: item),
+                  _AppBar(),
+                  Expanded(
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  const _PriceSummary(
-                    subtotal: _subtotal,
-                    tax: _tax,
-                    total: _total,
-                  ),
-                  const SizedBox(height: 24),
                 ],
-              ),
-            ),
-          ),
-          const _BottomBar(),
-        ],
+              );
+            } else if (state is OrderDetailError) {
+              return Column(
+                children: [
+                  const _AppBar(),
+                  Expanded(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            color: AppColors.error,
+                            size: 48,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            state.message,
+                            style: const TextStyle(color: AppColors.error),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                            ),
+                            onPressed: () => context
+                                .read<OrderDetailCubit>()
+                                .getOrderDetail(tableId),
+                            child: const Text(
+                              'Retry',
+                              style: TextStyle(color: AppColors.onPrimary),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            } else if (state is OrderDetailSuccess) {
+              final order = state.order;
+              final sortedItems = order.sortedItems;
+              final activeCount = order.items
+                  .where((i) => i.status != OrderItemStatus.served)
+                  .length;
+
+              return Column(
+                children: [
+                  _AppBar(),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 20),
+                          _OrderHeader(order: order, activeCount: activeCount),
+                          const SizedBox(height: 20),
+                          ...sortedItems.map(
+                            (item) => Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _OrderItemCard(item: item),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          _PriceSummary(
+                            subtotal: order.subtotal,
+                            tax: order.tax,
+                            total: order.totalWithTax,
+                          ),
+                          const SizedBox(height: 24),
+                        ],
+                      ),
+                    ),
+                  ),
+                  _BottomBar(tableId: tableId, tableName: tableName),
+                ],
+              );
+            }
+            return const SizedBox();
+          },
+        ),
       ),
     );
   }
 }
 
-// ─── App Bar ────────────────────────────────────────────────────────────────
+// ─── App Bar ─────────────────────────────────────────────────────────────────
 
 class _AppBar extends StatelessWidget {
   const _AppBar();
@@ -116,9 +151,7 @@ class _AppBar extends StatelessWidget {
       child: Row(
         children: [
           GestureDetector(
-            onTap: () {
-              Navigator.maybePop(context);
-            },
+            onTap: () => Navigator.maybePop(context),
             child: Container(
               width: 36,
               height: 36,
@@ -153,19 +186,29 @@ class _AppBar extends StatelessWidget {
   }
 }
 
-// ─── Order Header ────────────────────────────────────────────────────────────
+// ─── Order Header ─────────────────────────────────────────────────────────────
 
 class _OrderHeader extends StatelessWidget {
-  const _OrderHeader();
+  final OrderDetail order;
+  final int activeCount;
+
+  const _OrderHeader({required this.order, required this.activeCount});
+
+  String _formatDateTime(DateTime dt) {
+    final local = dt.toLocal();
+    final h = local.hour.toString().padLeft(2, '0');
+    final m = local.minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'TABLE 12',
-          style: TextStyle(
+        Text(
+          'TABLE ${order.tableId}',
+          style: const TextStyle(
             color: AppColors.onSurfaceMuted,
             fontSize: 11,
             fontWeight: FontWeight.w600,
@@ -175,16 +218,17 @@ class _OrderHeader extends StatelessWidget {
         const SizedBox(height: 4),
         Row(
           children: [
-            const Text(
-              'Order #4920',
-              style: TextStyle(
+            Text(
+              'Order #${order.orderCode}',
+              style: const TextStyle(
                 color: AppColors.onSurface,
                 fontSize: 26,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.5,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
+            // Active badge
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
@@ -192,9 +236,9 @@ class _OrderHeader extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: AppColors.border),
               ),
-              child: const Text(
-                '3 Items Active',
-                style: TextStyle(
+              child: Text(
+                '$activeCount Items Active',
+                style: const TextStyle(
                   color: AppColors.onSurfaceMuted,
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -203,184 +247,215 @@ class _OrderHeader extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 6),
-        const Text(
-          'Opened at 19:42 by Server: Alex M.',
-          style: TextStyle(color: AppColors.onSurfaceMuted, fontSize: 12),
-        ),
       ],
     );
   }
 }
 
-// ─── Order Item Card ─────────────────────────────────────────────────────────
+// ─── Status Chip ──────────────────────────────────────────────────────────────
 
-class _OrderItemCard extends StatelessWidget {
-  final OrderItem item;
-  const _OrderItemCard({required this.item});
+class _StatusChip extends StatelessWidget {
+  final OrderItemStatus status;
 
-  Color get _statusColor {
-    switch (item.status) {
-      case OrderStatus.preparing:
-        return AppColors.warning;
-      case OrderStatus.served:
-        return AppColors.success;
-      case OrderStatus.pending:
-        return AppColors.onSurfaceMuted;
-    }
-  }
-
-  String get _statusLabel {
-    switch (item.status) {
-      case OrderStatus.preparing:
-        return 'PREPARING';
-      case OrderStatus.served:
-        return 'SERVED';
-      case OrderStatus.pending:
-        return 'PENDING';
-    }
-  }
-
-  Color get _cardBorderColor {
-    if (item.status == OrderStatus.preparing) {
-      return AppColors.warning.withOpacity(0.35);
-    }
-    return AppColors.border;
-  }
+  const _StatusChip({required this.status});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _cardBorderColor, width: 1),
+    final (label, bg, fg) = switch (status) {
+      OrderItemStatus.preparing => (
+        'PREPARING',
+        const Color(0xFFFF8C42).withOpacity(0.15),
+        const Color(0xFFFF8C42),
       ),
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Name + Status + Price row
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: [
-                    Text(
-                      item.name,
-                      style: const TextStyle(
-                        color: AppColors.onSurface,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    _StatusBadge(label: _statusLabel, color: _statusColor),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '\$${item.price.toStringAsFixed(2)}',
-                style: const TextStyle(
-                  color: AppColors.onSurface,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          // ── Note + circle icon
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  item.note,
-                  style: const TextStyle(
-                    color: AppColors.onSurfaceMuted,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-              const Icon(
-                Icons.radio_button_unchecked,
-                color: AppColors.border,
-                size: 20,
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          const Divider(color: AppColors.border, height: 1),
-          const SizedBox(height: 10),
-          // ── Quantity + Ordered by
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceElevated,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Text(
-                  'x${item.quantity}',
-                  style: const TextStyle(
-                    color: AppColors.onSurfaceMuted,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Ordered by: ${item.orderedBy}',
-                style: const TextStyle(
-                  color: AppColors.onSurfaceMuted,
-                  fontSize: 11,
-                ),
-              ),
-            ],
-          ),
-        ],
+      OrderItemStatus.served => (
+        'SERVED',
+        const Color(0xFF4CAF82).withOpacity(0.15),
+        const Color(0xFF4CAF82),
       ),
-    );
-  }
-}
+      OrderItemStatus.pending => (
+        'PENDING',
+        AppColors.surfaceElevated,
+        AppColors.onSurfaceMuted,
+      ),
+      _ => (
+        status.name.toUpperCase(),
+        AppColors.surfaceElevated,
+        AppColors.onSurfaceMuted,
+      ),
+    };
 
-// ─── Status Badge ────────────────────────────────────────────────────────────
-
-class _StatusBadge extends StatelessWidget {
-  final String label;
-  final Color color;
-  const _StatusBadge({required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: bg,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withOpacity(0.4), width: 1),
       ),
       child: Text(
         label,
         style: TextStyle(
-          color: color,
+          color: fg,
           fontSize: 10,
           fontWeight: FontWeight.w700,
-          letterSpacing: 0.8,
+          letterSpacing: 0.5,
         ),
       ),
     );
   }
 }
 
-// ─── Price Summary ───────────────────────────────────────────────────────────
+// ─── Order Item Card ──────────────────────────────────────────────────────────
+
+class _OrderItemCard extends StatelessWidget {
+  final OrderItemDetail item;
+  const _OrderItemCard({required this.item});
+
+  bool get _isServed => item.status == OrderItemStatus.served;
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: _isServed ? 0.55 : 1.0,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.border, width: 1),
+        ),
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Name + Status + Price
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          item.title,
+                          style: TextStyle(
+                            color: _isServed
+                                ? AppColors.onSurfaceMuted
+                                : AppColors.onSurface,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            decoration: _isServed
+                                ? TextDecoration.lineThrough
+                                : TextDecoration.none,
+                            decorationColor: AppColors.onSurfaceMuted,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _StatusChip(status: item.status),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '\$${(item.price * item.quantity).toStringAsFixed(2)}',
+                  style: TextStyle(
+                    color: _isServed
+                        ? AppColors.onSurfaceMuted
+                        : AppColors.onSurface,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            // ── Notes/description
+            if (item.notes != null && item.notes!.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      item.notes!,
+                      style: const TextStyle(
+                        color: AppColors.onSurfaceMuted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  // circle icon shown only for non-served items
+                  if (!_isServed)
+                    const Icon(
+                      Icons.radio_button_unchecked,
+                      color: AppColors.border,
+                      size: 20,
+                    )
+                  else
+                    const Icon(
+                      Icons.check_circle_rounded,
+                      color: Color(0xFF4CAF82),
+                      size: 20,
+                    ),
+                ],
+              ),
+            ] else ...[
+              const SizedBox(height: 4),
+              Align(
+                alignment: Alignment.centerRight,
+                child: _isServed
+                    ? const Icon(
+                        Icons.check_circle_rounded,
+                        color: Color(0xFF4CAF82),
+                        size: 20,
+                      )
+                    : const Icon(
+                        Icons.radio_button_unchecked,
+                        color: AppColors.border,
+                        size: 20,
+                      ),
+              ),
+            ],
+            const SizedBox(height: 10),
+            const Divider(color: AppColors.border, height: 1),
+            const SizedBox(height: 10),
+            // ── Quantity + Ordered by
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Text(
+                    'x${item.quantity}',
+                    style: const TextStyle(
+                      color: AppColors.onSurfaceMuted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Ordered by: ${item.staffName}',
+                  style: const TextStyle(
+                    color: AppColors.onSurfaceMuted,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Price Summary ────────────────────────────────────────────────────────────
 
 class _PriceSummary extends StatelessWidget {
   final double subtotal;
@@ -399,59 +474,49 @@ class _PriceSummary extends StatelessWidget {
       children: [
         const Divider(color: AppColors.border),
         const SizedBox(height: 12),
-        _PriceRow(label: 'Subtotal', value: '\$${subtotal.toStringAsFixed(2)}'),
-        const SizedBox(height: 8),
-        _PriceRow(label: 'Tax (8.5%)', value: '\$${tax.toStringAsFixed(2)}'),
-        const SizedBox(height: 16),
-        const Divider(color: AppColors.border),
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Total',
-              style: TextStyle(
-                color: AppColors.onSurface,
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            Text(
-              '\$${total.toStringAsFixed(2)}',
-              style: const TextStyle(
-                color: AppColors.primary,
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -0.5,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _PriceRow extends StatelessWidget {
-  final String label;
-  final String value;
-  const _PriceRow({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(color: AppColors.onSurfaceMuted, fontSize: 14),
-        ),
-        Text(
-          value,
-          style: const TextStyle(
-            color: AppColors.onSurface,
+        _SummaryRow(
+          label: 'Subtotal',
+          value: '\$${subtotal.toStringAsFixed(2)}',
+          labelStyle: const TextStyle(
+            color: AppColors.onSurfaceMuted,
             fontSize: 14,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
+          ),
+          valueStyle: const TextStyle(
+            color: AppColors.onSurfaceMuted,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        _SummaryRow(
+          label: 'Tax (8.5%)',
+          value: '\$${tax.toStringAsFixed(2)}',
+          labelStyle: const TextStyle(
+            color: AppColors.onSurfaceMuted,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+          valueStyle: const TextStyle(
+            color: AppColors.onSurfaceMuted,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 16),
+        _SummaryRow(
+          label: 'Total',
+          value: '\$${total.toStringAsFixed(2)}',
+          labelStyle: const TextStyle(
+            color: AppColors.onSurface,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+          ),
+          valueStyle: const TextStyle(
+            color: AppColors.primary,
+            fontSize: 22,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.5,
           ),
         ),
       ],
@@ -459,10 +524,37 @@ class _PriceRow extends StatelessWidget {
   }
 }
 
-// ─── Bottom Bar ──────────────────────────────────────────────────────────────
+class _SummaryRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final TextStyle labelStyle;
+  final TextStyle valueStyle;
+
+  const _SummaryRow({
+    required this.label,
+    required this.value,
+    required this.labelStyle,
+    required this.valueStyle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: labelStyle),
+        Text(value, style: valueStyle),
+      ],
+    );
+  }
+}
+
+// ─── Bottom Bar ───────────────────────────────────────────────────────────────
 
 class _BottomBar extends StatelessWidget {
-  const _BottomBar();
+  final int tableId;
+  final String tableName;
+  const _BottomBar({required this.tableId, required this.tableName});
 
   @override
   Widget build(BuildContext context) {
@@ -478,7 +570,36 @@ class _BottomBar extends StatelessWidget {
           // ORDER MORE
           Expanded(
             child: GestureDetector(
-              onTap: () {},
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => MultiBlocProvider(
+                      providers: [
+                        BlocProvider(
+                          create: (_) => MenuCategoryCubit(
+                            menuRepository: MenuRepository(AppDependencies.instance.dioClient),
+                          )..loadCategories(),
+                        ),
+                        BlocProvider(
+                          create: (_) => MenuItemCubit(
+                            menuRepository: MenuRepository(AppDependencies.instance.dioClient),
+                          )..loadMenuItems(-1),
+                        ),
+                        BlocProvider(create: (_) => OrderDraftCubit(tableId: tableId, tableName: tableName)),
+                        BlocProvider(
+                          create: (_) => OrderSubmissionCubit(OrderRepository(AppDependencies.instance.dioClient)),
+                        ),
+                      ],
+                      child: const CreateOrderScreen(),
+                    ),
+                  ),
+                );
+                
+                if (context.mounted) {
+                  context.read<OrderDetailCubit>().getOrderDetail(tableId);
+                }
+              },
               child: Container(
                 height: 52,
                 decoration: BoxDecoration(
@@ -534,7 +655,11 @@ class _BottomBar extends StatelessWidget {
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.payment_rounded, color: AppColors.onPrimary, size: 18),
+                  Icon(
+                    Icons.payment_rounded,
+                    color: AppColors.onPrimary,
+                    size: 18,
+                  ),
                   SizedBox(width: 6),
                   Text(
                     'PAY',

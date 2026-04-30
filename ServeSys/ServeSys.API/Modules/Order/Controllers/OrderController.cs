@@ -21,6 +21,26 @@ namespace ServeSys.API.Modules.Order.Controllers
             _orderService = orderService;
         }
 
+        [HttpGet("{tableId:int?}")]
+        public async Task<IActionResult> GetOrderByTableId(int? tableId, CancellationToken cancellationToken)
+        {
+            if (!tableId.HasValue)
+                return BadRequest(ApiResponse.Fail("Table ID is required"));
+            try
+            {
+                var order = await _orderService.GetOrderByTableAsync(tableId.Value, cancellationToken);
+                return Ok(ApiResponse<OrderDetailDto>.Ok(order));
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(ApiResponse.Fail(ex.Message));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ApiResponse.Fail("Internal server error"));
+            }
+        }
+
         [HttpPost("place")]
         public async Task<IActionResult> PlaceOrder(OrderRequest orderRequest, CancellationToken cancellationToken)
         {

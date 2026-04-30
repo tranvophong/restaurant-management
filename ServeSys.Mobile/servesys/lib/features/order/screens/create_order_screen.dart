@@ -14,9 +14,7 @@ import 'package:shimmer/shimmer.dart';
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 class CreateOrderScreen extends StatefulWidget {
-  final int tableId;
-  final String tableName;
-  const CreateOrderScreen({super.key, required this.tableId, required this.tableName});
+  const CreateOrderScreen({super.key});
 
   @override
   State<CreateOrderScreen> createState() => _CreateOrderScreenState();
@@ -51,8 +49,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           BlocProvider.value(value: context.read<OrderSubmissionCubit>()),
         ],
         child: OrderConfirmSheet(
-          tableId: widget.tableId,
-          tableName: widget.tableName,
+          tableId: cubit.tableId,
+          tableName: cubit.tableName,
           note: _noteController.text,
           formatPrice: _formatPrice,
         ),
@@ -99,7 +97,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             ),
           ),
           Text(
-            'Tạo đơn – ${widget.tableName}',
+            'Tạo đơn – ${context.read<OrderDraftCubit>().tableName}',
             style: TextStyle(
               color: AppColors.onSurface,
               fontSize: 17,
